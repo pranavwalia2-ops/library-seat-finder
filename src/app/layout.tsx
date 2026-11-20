@@ -3,8 +3,8 @@ import './globals.css';
 import Navigation from '@/components/Navigation';
 
 export const metadata: Metadata = {
-  title: 'SeatSync - Library Seat Booking',
-  description: 'Smart library seat reservation system',
+  title: 'Library Seat Finder',
+  description: 'Code Fuzion 2026 | LPU - Problem M4',
 };
 
 export default function RootLayout({
@@ -14,11 +14,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+      <body style={{ background: '#ffffff', color: '#000000', margin: 0, padding: 0 }}>
+        {/* Full width header and tab bar */}
         <Navigation />
-        <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
-          {children}
-        </main>
+
+        {/* Content area: max-width 1000px, centered, padding 20px */}
+        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px' }}>
+          <main>
+            {children}
+          </main>
+
+          {/* Footer: small grey text with a 1px top border */}
+          <footer style={{ marginTop: '40px', paddingTop: '12px', borderTop: '1px solid #d1d5db', fontSize: '12px', color: '#6b7280' }}>
+            Library Seat Finder - problem M4
+          </footer>
+        </div>
       </body>
     </html>
   );
