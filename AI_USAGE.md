@@ -18,3 +18,7 @@ In accordance with hackathon guidelines, this document logs all AI assistance, t
 
 ---
 *This log will be updated continuously as each module is built.*
+
+## 3. Frontend & Presentation Framework
+- **Files**: `src/app/*`, `src/components/*`, `src/lib/*`
+- **Contribution**: Scaffolded Next.js 14 App Router with Tailwind CSS, SVG floor map, live countdown timers, HTML5 QR camera scanner with manual code fallback, Recharts peak-hours heatmap, top 10 hogged desks detection, and live concurrency simulator.
