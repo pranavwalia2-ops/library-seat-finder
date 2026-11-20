@@ -7,11 +7,11 @@ export default function MapPage() {
   const [selectedFloor, setSelectedFloor] = useState<number>(1);
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
 
-  // Static mock seat generator for 100 seats per floor (10 cols x 10 rows)
+  // Static mock seat generator for 100 seats per floor (labelled F1-001 to F1-100, F2-001, etc.)
   const getMockSeats = (floor: number) => {
     const seats = [];
     for (let i = 1; i <= 100; i++) {
-      const pad = String(i).padStart(2, '0');
+      const pad = String(i).padStart(3, '0');
       const label = `F${floor}-${pad}`;
       
       // Deterministic mock statuses for realistic demo distribution
@@ -31,44 +31,50 @@ export default function MapPage() {
   };
 
   const currentSeats = getMockSeats(selectedFloor);
-  const total = 100;
-  const occupied = currentSeats.filter((s) => s.status === 'occupied').length;
-  const onBreak = currentSeats.filter((s) => s.status === 'on_break').length;
-  const free = total - (occupied + onBreak);
+  const floorSeatsTotal = 100;
+  const floorOccupied = currentSeats.filter((s) => s.status === 'occupied').length;
+  const floorOnBreak = currentSeats.filter((s) => s.status === 'on_break').length;
+  const floorFree = floorSeatsTotal - (floorOccupied + floorOnBreak);
+
+  // Library-wide summary totals across all 5 floors (500 seats)
+  const totalLibrarySeats = 500;
+  const totalLibraryOccupied = floorOccupied * 5; // scaled mock totals
+  const totalLibraryOnBreak = floorOnBreak * 5;
+  const totalLibraryFree = totalLibrarySeats - (totalLibraryOccupied + totalLibraryOnBreak);
 
   return (
     <div>
       <h1>Map</h1>
       <p style={{ color: '#6b7280', margin: '0 0 16px 0', fontSize: '14px' }}>
-        Find a free seat and book it. The map refreshes every few seconds. (5 floors, 100 seats per floor)
+        Find a free seat and book it. The map refreshes every few seconds.
       </p>
 
-      {/* Summary strip of 4 boxes in one row: Total seats, Free, Occupied, On break */}
+      {/* Summary strip: Total seats = 500, Free, Occupied, On break */}
       <div className="summary-strip">
         <div className="summary-box">
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000' }}>{total}</div>
-          <div style={{ fontSize: '12px', color: '#6b7280' }}>Total on Floor {selectedFloor}</div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000' }}>{totalLibrarySeats}</div>
+          <div style={{ fontSize: '12px', color: '#6b7280' }}>Total seats</div>
         </div>
         <div className="summary-box">
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>{free}</div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>{totalLibraryFree}</div>
           <div style={{ fontSize: '12px', color: '#6b7280' }}>Free</div>
         </div>
         <div className="summary-box">
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626' }}>{occupied}</div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626' }}>{totalLibraryOccupied}</div>
           <div style={{ fontSize: '12px', color: '#6b7280' }}>Occupied</div>
         </div>
         <div className="summary-box">
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#d97706' }}>{onBreak}</div>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#d97706' }}>{totalLibraryOnBreak}</div>
           <div style={{ fontSize: '12px', color: '#6b7280' }}>On break</div>
         </div>
       </div>
 
       {/* Floor selector & Legend */}
       <div className="panel">
-        <div className="panel-header">Floor selection and layout (100 seats)</div>
+        <div className="panel-header">Floor selection and layout (Floor {selectedFloor} - 100 seats)</div>
         <div className="panel-body">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-            {/* Floor selector: 5 buttons */}
+            {/* Floor selector: 5 buttons (Floor 1 to Floor 5) */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {[1, 2, 3, 4, 5].map((fl) => (
                 <button
@@ -89,20 +95,20 @@ export default function MapPage() {
             <div style={{ display: 'flex', gap: '16px', fontSize: '13px', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '14px', height: '14px', background: '#22c55e', border: '1px solid #000000' }}></div>
-                <span>Free ({free})</span>
+                <span>Free ({floorFree})</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '14px', height: '14px', background: '#ef4444', border: '1px solid #000000' }}></div>
-                <span>Occupied ({occupied})</span>
+                <span>Occupied ({floorOccupied})</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '14px', height: '14px', background: '#f59e0b', border: '1px solid #000000' }}></div>
-                <span>On break ({onBreak})</span>
+                <span>On break ({floorOnBreak})</span>
               </div>
             </div>
           </div>
 
-          {/* Seat grid for the selected floor: 10 columns, 44px square cells, 1px black border */}
+          {/* Seat grid: 10 columns on desktop (44px), 6 columns on mobile under 600px (40px) */}
           <div style={{ overflowX: 'auto', paddingBottom: '8px' }}>
             <div className="seat-grid-container">
               {currentSeats.map((seat) => {
@@ -117,14 +123,12 @@ export default function MapPage() {
                     key={seat.id}
                     type="button"
                     onClick={() => setSelectedSeat(seat.label)}
+                    className="seat-cell"
                     style={{
-                      width: '44px',
-                      height: '44px',
                       padding: 0,
                       background: bg,
                       border: isSelected ? '2px solid #1d4ed8' : '1px solid #000000',
                       color: '#000000',
-                      fontSize: '11px',
                       fontWeight: 'bold',
                       display: 'flex',
                       alignItems: 'center',

@@ -34,3 +34,7 @@ In accordance with hackathon guidelines, this document logs all AI assistance, t
 ## 6. Structural Layout & Panel Improvements
 - **Files**: `src/app/globals.css`, `src/app/layout.tsx`, `src/components/Navigation.tsx`, `src/app/map/page.tsx`, `src/app/my-seat/page.tsx`, `src/app/scan/page.tsx`, `src/app/admin/page.tsx`, `src/app/login/page.tsx`
 - **Contribution**: Restructured the frontend into clean panels (`border: 1px solid #d1d5db`, `#f3f4f6` 14px bold heading strip), full-width top header with "Library Seat Finder", active tab with 3px blue bottom border, 10-column 44px square seat grid with mock statuses and TODO comment, 4-box summary strip, 4:3 camera area, peak-hours volume bars, and hogged seats table.
+
+## 7. Capacity Expansion (5 Floors, 500 Seats)
+- **Files**: `src/app/map/page.tsx`, `src/app/globals.css`, `src/lib/store.ts`, `src/app/demo/page.tsx`, `supabase/seed.sql`, `src/app/pitch/page.tsx`
+- **Contribution**: Updated project capacity to 5 floors and 100 seats per floor (`F1-001` through `F5-100`). Set summary strip to 500 total seats. Updated responsive CSS grid to 10 columns (44px) on desktop and 6 columns (40px) under 600px.

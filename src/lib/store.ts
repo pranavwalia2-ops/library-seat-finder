@@ -35,8 +35,8 @@ export function generateInitialSeats(): { floors: Floor[]; seats: Seat[] } {
     for (let i = 1; i <= 100; i++) {
       const col = ((i - 1) % 10) + 1;
       const row = Math.floor((i - 1) / 10) + 1;
-      const label = `${prefix}-S${String(i).padStart(2, '0')}`;
-      const code = `LPU-${prefix}-${String(i).padStart(3, '0')}`;
+      const label = `F${fl.level}-${String(i).padStart(3, '0')}`;
+      const code = `LPU-F${fl.level}-${String(i).padStart(3, '0')}`;
 
       // Pre-seed a few live states for instant realistic demo
       let status: Seat['status'] = 'free';
@@ -112,16 +112,16 @@ export function generateInitialSeats(): { floors: Floor[]; seats: Seat[] } {
 
 export function getInitialHoggedMetrics(): HoggedSeatMetric[] {
   return [
-    { seat_label: 'F1-S05', seat_code: 'LPU-F1-005', floor_name: 'Ground Floor', timeout_count: 8, break_ratio: 72, total_held_minutes: 240 },
-    { seat_label: 'F1-S12', seat_code: 'LPU-F1-012', floor_name: 'Ground Floor', timeout_count: 6, break_ratio: 65, total_held_minutes: 190 },
-    { seat_label: 'F2-S08', seat_code: 'LPU-F2-008', floor_name: 'First Floor', timeout_count: 5, break_ratio: 58, total_held_minutes: 160 },
-    { seat_label: 'F1-S22', seat_code: 'LPU-F1-022', floor_name: 'Ground Floor', timeout_count: 5, break_ratio: 54, total_held_minutes: 145 },
-    { seat_label: 'F3-S04', seat_code: 'LPU-F3-004', floor_name: 'Second Floor', timeout_count: 4, break_ratio: 51, total_held_minutes: 130 },
-    { seat_label: 'F2-S19', seat_code: 'LPU-F2-019', floor_name: 'First Floor', timeout_count: 4, break_ratio: 48, total_held_minutes: 120 },
-    { seat_label: 'F3-S15', seat_code: 'LPU-F3-015', floor_name: 'Second Floor', timeout_count: 3, break_ratio: 45, total_held_minutes: 110 },
-    { seat_label: 'F1-S30', seat_code: 'LPU-F1-030', floor_name: 'Ground Floor', timeout_count: 3, break_ratio: 42, total_held_minutes: 95 },
-    { seat_label: 'F2-S35', seat_code: 'LPU-F2-035', floor_name: 'First Floor', timeout_count: 2, break_ratio: 38, total_held_minutes: 85 },
-    { seat_label: 'F3-S38', seat_code: 'LPU-F3-038', floor_name: 'Second Floor', timeout_count: 2, break_ratio: 35, total_held_minutes: 70 },
+    { seat_label: 'F1-005', seat_code: 'LPU-F1-005', floor_name: 'Ground Floor', timeout_count: 8, break_ratio: 72, total_held_minutes: 240 },
+    { seat_label: 'F1-012', seat_code: 'LPU-F1-012', floor_name: 'Ground Floor', timeout_count: 6, break_ratio: 65, total_held_minutes: 190 },
+    { seat_label: 'F2-008', seat_code: 'LPU-F2-008', floor_name: 'First Floor', timeout_count: 5, break_ratio: 58, total_held_minutes: 160 },
+    { seat_label: 'F1-022', seat_code: 'LPU-F1-022', floor_name: 'Ground Floor', timeout_count: 5, break_ratio: 54, total_held_minutes: 145 },
+    { seat_label: 'F3-004', seat_code: 'LPU-F3-004', floor_name: 'Second Floor', timeout_count: 4, break_ratio: 51, total_held_minutes: 130 },
+    { seat_label: 'F2-019', seat_code: 'LPU-F2-019', floor_name: 'First Floor', timeout_count: 4, break_ratio: 48, total_held_minutes: 120 },
+    { seat_label: 'F3-015', seat_code: 'LPU-F3-015', floor_name: 'Second Floor', timeout_count: 3, break_ratio: 45, total_held_minutes: 110 },
+    { seat_label: 'F1-030', seat_code: 'LPU-F1-030', floor_name: 'Ground Floor', timeout_count: 3, break_ratio: 42, total_held_minutes: 95 },
+    { seat_label: 'F4-025', seat_code: 'LPU-F4-025', floor_name: 'Third Floor', timeout_count: 2, break_ratio: 38, total_held_minutes: 85 },
+    { seat_label: 'F5-010', seat_code: 'LPU-F5-010', floor_name: 'Fourth Floor', timeout_count: 2, break_ratio: 35, total_held_minutes: 70 },
   ];
 }
 

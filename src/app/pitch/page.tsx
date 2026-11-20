@@ -11,7 +11,7 @@ export default function PitchDeckPage() {
       title: "SeatSync: Problem Statement",
       content: (
         <div>
-          <p>During exams, students walk across 3 library floors searching for open seats.</p>
+          <p>During exams, students walk across 5 library floors searching for open seats.</p>
           <p>Seats are frequently blocked by bags left for hours without anyone studying.</p>
           <p>IoT sensors and hardware are too expensive for 1,000+ library seats.</p>
         </div>

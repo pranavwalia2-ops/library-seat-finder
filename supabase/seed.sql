@@ -1,7 +1,7 @@
 -- ============================================================================
 -- SeatSync Database Seed Script
 -- Hackathon: Code Fuzion 2026, LPU (Problem M4)
--- Description: Seeds 3 library floors, 120 seats (40 per floor), demo users
+-- Description: Seeds 5 library floors, 500 seats (100 per floor), demo users
 --              (students & admin), plus sample historical and active bookings
 --              for immediate live demo & admin analytics testing.
 -- ============================================================================
@@ -80,8 +80,8 @@ BEGIN
             -- Coordinates: 10 cols (1..10), 10 rows (1..10)
             col := ((s_idx - 1) % 10) + 1;
             row := ((s_idx - 1) / 10) + 1;
-            seat_label := floor_record.prefix || '-S' || LPAD(s_idx::TEXT, 2, '0');
-            seat_code := 'LPU-' || floor_record.prefix || '-' || LPAD(s_idx::TEXT, 3, '0');
+            seat_label := 'F' || floor_record.lvl || '-' || LPAD(s_idx::TEXT, 3, '0');
+            seat_code := 'LPU-F' || floor_record.lvl || '-' || LPAD(s_idx::TEXT, 3, '0');
 
             INSERT INTO seats (floor_id, label, x, y, code)
             VALUES (floor_record.id, seat_label, col, row, seat_code);
@@ -90,7 +90,7 @@ BEGIN
 
     -- 5. Create Sample Active Bookings (for immediate visual feedback on map)
     -- Floor 1 Seat 1: Currently Checked In
-    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F1-S01';
+    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F1-001';
     temp_user_id := student_ids[1];
     INSERT INTO bookings (seat_id, user_id, status, booked_at, checked_in_at)
     VALUES (temp_seat_id, temp_user_id, 'checked_in', NOW() - INTERVAL '45 minutes', NOW() - INTERVAL '40 minutes')
@@ -102,7 +102,7 @@ BEGIN
         (temp_booking_id, temp_seat_id, temp_user_id, 'checked_in', NOW() - INTERVAL '40 minutes');
 
     -- Floor 1 Seat 2: Booked (Awaiting QR Scan, 10 min left)
-    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F1-S02';
+    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F1-002';
     temp_user_id := student_ids[2];
     INSERT INTO bookings (seat_id, user_id, status, booked_at, expires_at)
     VALUES (temp_seat_id, temp_user_id, 'booked', NOW() - INTERVAL '5 minutes', NOW() + INTERVAL '10 minutes')
@@ -112,7 +112,7 @@ BEGIN
     VALUES (temp_booking_id, temp_seat_id, temp_user_id, 'booked', NOW() - INTERVAL '5 minutes');
 
     -- Floor 1 Seat 3: On Break (14 min left on 20 min timer)
-    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F1-S03';
+    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F1-003';
     temp_user_id := student_ids[3];
     INSERT INTO bookings (seat_id, user_id, status, booked_at, checked_in_at, break_started_at, expires_at)
     VALUES (temp_seat_id, temp_user_id, 'on_break', NOW() - INTERVAL '60 minutes', NOW() - INTERVAL '55 minutes', NOW() - INTERVAL '6 minutes', NOW() + INTERVAL '14 minutes')
@@ -125,19 +125,19 @@ BEGIN
         (temp_booking_id, temp_seat_id, temp_user_id, 'break_started', NOW() - INTERVAL '6 minutes');
 
     -- Floor 2 Seat 10 & 11: Checked In
-    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F2-S10';
+    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F2-010';
     temp_user_id := student_ids[4];
     INSERT INTO bookings (seat_id, user_id, status, booked_at, checked_in_at)
     VALUES (temp_seat_id, temp_user_id, 'checked_in', NOW() - INTERVAL '120 minutes', NOW() - INTERVAL '115 minutes');
 
-    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F2-S11';
+    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F2-011';
     temp_user_id := student_ids[5];
     INSERT INTO bookings (seat_id, user_id, status, booked_at, checked_in_at)
     VALUES (temp_seat_id, temp_user_id, 'checked_in', NOW() - INTERVAL '30 minutes', NOW() - INTERVAL '25 minutes');
 
     -- 6. Insert Historical Bookings for Admin Analytics (Peak Hours & Hogging)
-    -- Seat F1-S05 will be heavily "hogged" (frequent timeouts / breaks)
-    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F1-S05';
+    -- Seat F1-005 will be heavily "hogged" (frequent timeouts / breaks)
+    SELECT id INTO temp_seat_id FROM seats WHERE label = 'F1-005';
     FOR s_idx IN 6..15 LOOP
         INSERT INTO bookings (seat_id, user_id, status, booked_at, checked_in_at, break_started_at, expires_at, released_at, release_reason)
         VALUES (

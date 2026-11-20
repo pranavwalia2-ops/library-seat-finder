@@ -28,7 +28,7 @@ export default function DemoPage() {
     };
     saveState(cleanState);
     setConcurrencyResults(null);
-    setResetMessage('Reset successful. Database restored to 120 desks and demo students.');
+    setResetMessage('Reset successful. Database restored to 500 desks (5 floors x 100 seats) and demo students.');
     setTimeout(() => setResetMessage(''), 4000);
   };
 
@@ -123,7 +123,7 @@ export default function DemoPage() {
             className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-3 rounded text-xs border border-slate-200 transition text-left"
           >
             <strong className="block text-slate-900">Reset Data</strong>
-            <span className="text-[11px] text-slate-500">Restore 120 seats &amp; demo students</span>
+            <span className="text-[11px] text-slate-500">Restore 500 seats (5 floors x 100) &amp; demo students</span>
           </button>
 
           <button
