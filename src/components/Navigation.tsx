@@ -54,6 +54,16 @@ export default function Navigation() {
 
   const tabs = [
     {
+      label: 'Home',
+      href: '/',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      ),
+    },
+    {
       label: 'Map',
       href: '/map',
       icon: (
@@ -129,6 +139,17 @@ export default function Navigation() {
         </svg>
       ),
     },
+    {
+      label: 'Login',
+      href: '/login',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+          <polyline points="10 17 15 12 10 7"></polyline>
+          <line x1="15" y1="12" x2="3" y2="12"></line>
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -148,7 +169,7 @@ export default function Navigation() {
           }}
         >
           {/* Logo & Subtitle */}
-          <Link href="/map" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }} title="Go to Home / Landing Page">
             <div>
               <div style={{ fontWeight: 600, fontSize: '18px', color: '#0f172a', lineHeight: 1.2 }}>
                 Library Seat Finder
@@ -159,43 +180,59 @@ export default function Navigation() {
             </div>
           </Link>
 
-          {/* User Switcher Pill */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: 'rgba(255, 255, 255, 0.65)',
-              backdropFilter: 'blur(8px)',
-              padding: '4px 12px',
-              borderRadius: '20px',
-              border: '1px solid rgba(255, 255, 255, 0.8)',
-              fontSize: '13px',
-              color: '#0f172a',
-            }}
-          >
-            <span style={{ color: '#475569', fontSize: '12px' }}>Student ID:</span>
-            <span style={{ fontWeight: 600, color: '#0f172a' }}>{regNo}</span>
-            <span style={{ color: '#cbd5e1' }}>|</span>
-            <select
-              value={regNo}
-              onChange={(e) => handleSwitchUser(e.target.value)}
+          {/* User Switcher Pill & Login Link */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
               style={{
-                background: 'transparent',
-                color: '#2563eb',
-                border: 'none',
-                height: '24px',
-                padding: '0 4px',
-                fontSize: '12px',
-                fontWeight: 600,
-                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(255, 255, 255, 0.65)',
+                backdropFilter: 'blur(8px)',
+                padding: '4px 12px',
+                borderRadius: '20px',
+                border: '1px solid rgba(255, 255, 255, 0.8)',
+                fontSize: '13px',
+                color: '#0f172a',
               }}
             >
-              <option value="12200001">12200001 (Student)</option>
-              <option value="12200002">12200002 (Student)</option>
-              <option value="12200003">12200003 (Student)</option>
-              <option value="12200000">12200000 (Admin)</option>
-            </select>
+              <span style={{ color: '#475569', fontSize: '12px' }}>Student ID:</span>
+              <span style={{ fontWeight: 600, color: '#0f172a' }}>{regNo}</span>
+              <span style={{ color: '#cbd5e1' }}>|</span>
+              <select
+                value={regNo}
+                onChange={(e) => handleSwitchUser(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  color: '#2563eb',
+                  border: 'none',
+                  height: '24px',
+                  padding: '0 4px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <option value="12200001">12200001 (Student)</option>
+                <option value="12200002">12200002 (Student)</option>
+                <option value="12200003">12200003 (Student)</option>
+                <option value="12200000">12200000 (Admin)</option>
+              </select>
+            </div>
+
+            <Link
+              href="/login"
+              className="btn secondary-glass"
+              style={{
+                padding: '5px 12px',
+                fontSize: '12px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                borderRadius: '16px',
+              }}
+            >
+              Login
+            </Link>
           </div>
         </div>
       </header>
@@ -212,7 +249,7 @@ export default function Navigation() {
           }}
         >
           {tabs.map((tab) => {
-            const isActive = pathname === tab.href || (pathname === '/' && tab.href === '/map');
+            const isActive = pathname === tab.href;
             return (
               <Link
                 key={tab.href}
