@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { loadStoredState, saveState, generateInitialSeats, getInitialHoggedMetrics, getInitialPeakHours } from '@/lib/store';
-import { Sparkles, RefreshCw, Zap, ShieldCheck, CheckCircle2, AlertTriangle, Users } from 'lucide-react';
+import { Sparkles, RefreshCw, Zap, ShieldCheck, CheckCircle2, Users } from 'lucide-react';
 
 export default function DemoPage() {
   const [resetMessage, setResetMessage] = useState('');
@@ -17,7 +17,6 @@ export default function DemoPage() {
     winnerStudent: string;
   } | null>(null);
 
-  // 1. Reset Database & State to Clean Seed
   const handleResetSeed = () => {
     const { floors, seats } = generateInitialSeats();
     const cleanState = {
@@ -34,16 +33,12 @@ export default function DemoPage() {
     setTimeout(() => setResetMessage(''), 4000);
   };
 
-  // 2. Simulate 100 Concurrent Students firing at ONE free seat
   const handleSimulateConcurrency = async () => {
     setIsSimulating(true);
     setConcurrencyResults(null);
 
     const state = loadStoredState();
-    
-    // Pick first available free seat
     const targetSeat = state.seats.find((s) => s.status === 'free') || state.seats[0];
-    // Free it up if occupied for pure concurrency test
     targetSeat.status = 'free';
     targetSeat.active_booking = null;
 
@@ -53,7 +48,6 @@ export default function DemoPage() {
     let rejectedCount = 0;
     let winnerStudent = '';
 
-    // Atomic Mutex / Index Emulation: exactly one lock acquisition wins
     let seatClaimed = false;
 
     const attempts = Array.from({ length: totalStudents }, (_, i) => {
@@ -61,7 +55,6 @@ export default function DemoPage() {
       const start = performance.now();
 
       return new Promise<void>((resolve) => {
-        // Random micro-jitter to simulate true network concurrency
         setTimeout(() => {
           if (!seatClaimed) {
             seatClaimed = true;
@@ -89,7 +82,6 @@ export default function DemoPage() {
     });
 
     await Promise.all(attempts);
-
     saveState(state);
 
     latencies.sort((a, b) => a - b);
@@ -111,19 +103,19 @@ export default function DemoPage() {
   return (
     <div className="max-w-xl mx-auto space-y-6 pt-2">
       <div className="space-y-1 text-center">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-1">
-          <Sparkles className="w-3.5 h-3.5" />
+        <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold mb-1">
+          <Sparkles className="w-3.5 h-3.5 text-blue-600" />
           <span>Judges Live Demo Panel</span>
         </div>
-        <h2 className="text-2xl font-bold text-white tracking-tight">System Controls & Concurrency Proof</h2>
-        <p className="text-xs text-slate-400">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">System Controls & Concurrency Proof</h2>
+        <p className="text-xs text-slate-500">
           Run live load tests and reset mock library data in one click
         </p>
       </div>
 
       {resetMessage && (
-        <div className="text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 flex items-center gap-2 font-medium">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{resetMessage}</span>
         </div>
       )}
@@ -131,40 +123,40 @@ export default function DemoPage() {
       {/* Control Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Reset Button */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-3 flex flex-col justify-between shadow-sm">
           <div>
-            <div className="flex items-center gap-2 font-bold text-white text-sm">
-              <RefreshCw className="w-4 h-4 text-indigo-400" />
+            <div className="flex items-center gap-2 font-black text-slate-900 text-sm">
+              <RefreshCw className="w-4 h-4 text-blue-600" />
               <span>Reset & Seed Data</span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
               Restores 3 floors x 40 seats (120 total), demo students, and realistic activity logs.
             </p>
           </div>
           <button
             onClick={handleResetSeed}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl border border-slate-700 transition text-xs flex items-center justify-center gap-1.5"
+            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl border border-slate-200 transition text-xs flex items-center justify-center gap-1.5"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Reset 120 Seats to Seed</span>
+            <RefreshCw className="w-3.5 h-3.5 text-slate-600" />
+            <span>Reset 120 Desks to Seed</span>
           </button>
         </div>
 
         {/* Simulate Concurrency */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-3 flex flex-col justify-between shadow-sm">
           <div>
-            <div className="flex items-center gap-2 font-bold text-white text-sm">
-              <Zap className="w-4 h-4 text-amber-400" />
+            <div className="flex items-center gap-2 font-black text-slate-900 text-sm">
+              <Zap className="w-4 h-4 text-purple-600" />
               <span>Simulate 100 Students</span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
               Fires 100 simultaneous bookings at the same free seat to prove zero double-booking.
             </p>
           </div>
           <button
             onClick={handleSimulateConcurrency}
             disabled={isSimulating}
-            className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-600/30"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition text-xs flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20"
           >
             <Users className="w-3.5 h-3.5" />
             <span>{isSimulating ? 'Simulating 100 Requests...' : 'Fire 100 Concurrent Bookings'}</span>
@@ -174,44 +166,44 @@ export default function DemoPage() {
 
       {/* Concurrency Proof Live Result Card */}
       {concurrencyResults && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
-              <h4 className="font-bold text-white text-sm sm:text-base">Concurrency Proof Results</h4>
+              <ShieldCheck className="w-6 h-6 text-emerald-600" />
+              <h4 className="font-extrabold text-slate-900 text-base">Concurrency Proof Results</h4>
             </div>
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               PASSED (0 Duplicates)
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-              <div className="text-[11px] text-slate-400">Total Requests</div>
-              <div className="text-xl font-bold font-mono text-white mt-1">{concurrencyResults.totalAttempts}</div>
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+              <div className="text-[11px] font-bold text-slate-500 uppercase">Total Requests</div>
+              <div className="text-2xl font-black font-mono text-slate-900 mt-1">{concurrencyResults.totalAttempts}</div>
             </div>
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-              <div className="text-[11px] text-slate-400">Winning Student</div>
-              <div className="text-xl font-bold font-mono text-emerald-400 mt-1">{concurrencyResults.winners}</div>
-              <div className="text-[10px] text-slate-500 font-mono">Reg: {concurrencyResults.winnerStudent}</div>
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+              <div className="text-[11px] font-bold text-slate-500 uppercase">Winning Student</div>
+              <div className="text-2xl font-black font-mono text-emerald-600 mt-1">{concurrencyResults.winners}</div>
+              <div className="text-[10px] text-slate-500 font-mono font-medium">Reg: {concurrencyResults.winnerStudent}</div>
             </div>
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-              <div className="text-[11px] text-slate-400">Rejected (409)</div>
-              <div className="text-xl font-bold font-mono text-rose-400 mt-1">{concurrencyResults.rejected}</div>
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+              <div className="text-[11px] font-bold text-slate-500 uppercase">Rejected (409)</div>
+              <div className="text-2xl font-black font-mono text-rose-600 mt-1">{concurrencyResults.rejected}</div>
               <div className="text-[10px] text-slate-500">Constraint Trip</div>
             </div>
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-              <div className="text-[11px] text-slate-400">Double Bookings</div>
-              <div className="text-xl font-bold font-mono text-emerald-400 mt-1">0</div>
-              <div className="text-[10px] text-emerald-400 font-semibold">Strict 0 Guaranteed</div>
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+              <div className="text-[11px] font-bold text-slate-500 uppercase">Double Bookings</div>
+              <div className="text-2xl font-black font-mono text-emerald-600 mt-1">0</div>
+              <div className="text-[10px] text-emerald-600 font-bold">Strict 0 Guaranteed</div>
             </div>
           </div>
 
-          <div className="text-xs text-slate-300 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 leading-relaxed">
-            <strong>Target Desk:</strong> <span className="text-white font-mono">{concurrencyResults.targetSeat}</span> | 
-            <strong className="ml-2">P95 Micro-Latency:</strong> <span className="text-indigo-400 font-mono">{concurrencyResults.p95LatencyMs} ms</span>
-            <p className="mt-1 text-slate-400 text-[11px]">
-              Exact match with Postgres partial unique index behavior: out of 100 concurrent requests, exactly 1 wins, 99 fail with constraint violation, and 0 duplicate seats are allocated.
+          <div className="text-xs text-slate-700 bg-blue-50/60 p-4 rounded-2xl border border-blue-200 leading-relaxed">
+            <strong>Target Desk:</strong> <span className="text-blue-700 font-mono font-bold">{concurrencyResults.targetSeat}</span> | 
+            <strong className="ml-2">P95 Latency:</strong> <span className="text-purple-700 font-mono font-bold">{concurrencyResults.p95LatencyMs} ms</span>
+            <p className="mt-1 text-slate-600 text-[11px]">
+              Exact match with PostgreSQL partial unique index behavior: out of 100 concurrent requests, exactly 1 wins, 99 fail with constraint violation, and 0 duplicate seats are allocated.
             </p>
           </div>
         </div>

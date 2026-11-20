@@ -22,3 +22,7 @@ In accordance with hackathon guidelines, this document logs all AI assistance, t
 ## 3. Frontend & Presentation Framework
 - **Files**: `src/app/*`, `src/components/*`, `src/lib/*`
 - **Contribution**: Scaffolded Next.js 14 App Router with Tailwind CSS, SVG floor map, live countdown timers, HTML5 QR camera scanner with manual code fallback, Recharts peak-hours heatmap, top 10 hogged desks detection, and live concurrency simulator.
+
+## 4. University Theme & Presentation Deck Redesign
+- **Files**: `src/app/*`, `src/components/Navigation.tsx`, `presentation_deck.html`
+- **Contribution**: Redesigned all interfaces from dark mode to an authentic, clean campus portal aesthetic (white surfaces `#ffffff`, slate borders, vibrant university blue `#2563eb`, and purple `#7c3aed` accents). Updated judges pitch slides and viva cheat sheet.

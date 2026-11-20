@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { loadStoredState, AppState } from '@/lib/store';
-import { MapPin, UserCheck, QrCode, BarChart3, ShieldCheck, ArrowRight, Zap, Clock } from 'lucide-react';
+import { MapPin, UserCheck, QrCode, BarChart3, ShieldCheck, ArrowRight, Zap, Clock, Presentation } from 'lucide-react';
 
 export default function HomePage() {
   const [state, setState] = useState<AppState | null>(null);
@@ -20,93 +20,95 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6">
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950 border border-indigo-800/40 p-6 sm:p-8 shadow-2xl">
-        <div className="relative z-10 max-w-2xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
-            <Zap className="w-3.5 h-3.5" />
-            Code Fuzion 2026 • Problem M4
+      {/* Hero Banner - University Light Theme */}
+      <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-6 sm:p-10 shadow-sm">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-bl from-purple-100 to-blue-100 rounded-full blur-3xl -mr-20 -mt-20 opacity-70 pointer-events-none"></div>
+
+        <div className="relative z-10 max-w-2xl space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold">
+            <Zap className="w-3.5 h-3.5 text-blue-600" />
+            LPU Code Fuzion 2026 • Problem M4
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
-            Smart Library Seat Reservation & Anti-Hogging Engine
+          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+            Smart Library Seat Booking & <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Anti-Hogging Engine</span>
           </h1>
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            Eliminate library walkaways and "ghost bag" seat reservation during exam season. Instant QR check-in, 20-minute break timer with auto-release, and 100% concurrency-safe bookings.
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+            Eliminate exam-week floor walking and &ldquo;ghost-bag&rdquo; desk reservation. Instant mobile QR check-in, 20-minute break timer with auto-release, and 100% concurrency safety.
           </p>
 
           <div className="pt-2 flex flex-wrap gap-3">
             <Link
               href="/map"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition shadow-lg shadow-indigo-600/30"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-sm transition shadow-md shadow-blue-500/20"
             >
               <MapPin className="w-4 h-4" />
-              <span>Open Floor Map</span>
+              <span>Open Live Floor Map</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              href="/scan"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-sm transition"
+              href="/pitch"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-bold text-sm transition shadow-sm"
             >
-              <QrCode className="w-4 h-4" />
-              <span>Scan Seat QR</span>
+              <Presentation className="w-4 h-4 text-purple-600" />
+              <span>Judges Pitch Slides</span>
             </Link>
           </div>
         </div>
       </div>
 
       {/* Live Occupancy Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-          <div className="text-xs font-medium text-slate-400">Available Free</div>
-          <div className="text-2xl font-bold text-emerald-400 mt-1">{freeSeats}</div>
-          <div className="text-[11px] text-emerald-500/80 mt-0.5">Ready for booking</div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Available Free</div>
+          <div className="text-3xl font-black text-emerald-600 mt-1">{freeSeats}</div>
+          <div className="text-xs text-emerald-600 font-medium mt-1">Ready for booking</div>
         </div>
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-          <div className="text-xs font-medium text-slate-400">Occupied</div>
-          <div className="text-2xl font-bold text-rose-400 mt-1">{occupiedSeats}</div>
-          <div className="text-[11px] text-rose-500/80 mt-0.5">Checked-in students</div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Occupied</div>
+          <div className="text-3xl font-black text-rose-600 mt-1">{occupiedSeats}</div>
+          <div className="text-xs text-rose-600 font-medium mt-1">Checked-in students</div>
         </div>
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-          <div className="text-xs font-medium text-slate-400">On Break</div>
-          <div className="text-2xl font-bold text-amber-400 mt-1">{breakSeats}</div>
-          <div className="text-[11px] text-amber-500/80 mt-0.5">20-min countdown</div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-500">On Break</div>
+          <div className="text-3xl font-black text-amber-600 mt-1">{breakSeats}</div>
+          <div className="text-xs text-amber-600 font-medium mt-1">20-min countdown</div>
         </div>
-        <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4">
-          <div className="text-xs font-medium text-slate-400">Awaiting Check-in</div>
-          <div className="text-2xl font-bold text-indigo-400 mt-1">{bookedSeats}</div>
-          <div className="text-[11px] text-indigo-400/80 mt-0.5">15-min QR window</div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-500">Awaiting Check-in</div>
+          <div className="text-3xl font-black text-purple-600 mt-1">{bookedSeats}</div>
+          <div className="text-xs text-purple-600 font-medium mt-1">15-min QR window</div>
         </div>
       </div>
 
-      {/* Key Judging Highlights */}
+      {/* Key Engineering Pillars */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 space-y-2">
-          <div className="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
-            <ShieldCheck className="w-4 h-4" />
+        <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2">
+          <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
+            <ShieldCheck className="w-5 h-5 text-blue-600" />
             <span>Zero Double Booking</span>
           </div>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Guaranteed via Postgres partial unique indexes. 100 concurrent clicks on one seat: exactly one wins, others fail cleanly.
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Enforced at the database kernel level via PostgreSQL Partial Unique Indexes. 100 simultaneous requests on one desk: exactly one wins, others fail cleanly.
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 space-y-2">
-          <div className="flex items-center gap-2 text-amber-400 font-semibold text-sm">
-            <Clock className="w-4 h-4" />
+        <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2">
+          <div className="flex items-center gap-2 text-purple-700 font-bold text-sm">
+            <Clock className="w-5 h-5 text-purple-600" />
             <span>Anti-Hogging & Auto-Release</span>
           </div>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Unclaimed bookings expire in 15 minutes. Break timers release seats after 20 minutes automatically on read and cron.
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Unclaimed desk holds expire in 15 minutes. Break timers release seats after 20 minutes automatically on read and cron.
           </p>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-900/50 border border-slate-800/80 space-y-2">
-          <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
-            <BarChart3 className="w-4 h-4" />
+        <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2">
+          <div className="flex items-center gap-2 text-blue-700 font-bold text-sm">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
             <span>Admin Intelligence</span>
           </div>
-          <p className="text-xs text-slate-400 leading-relaxed">
-            Live heatmap of peak traffic hours, top 10 hogged seats ranking, and one-click printable QR codes for all 3 floors.
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Live heatmap of peak traffic hours, top 10 hogged desks ranking, and one-click printable QR sticker sheets for all 3 floors.
           </p>
         </div>
       </div>

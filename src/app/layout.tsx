@@ -4,7 +4,7 @@ import Navigation from '@/components/Navigation';
 
 export const metadata: Metadata = {
   title: 'SeatSync - Smart Library Seat Booking',
-  description: 'Real-time library seat reservation system with concurrency control and anti-hogging detection.',
+  description: 'Real-time university library seat booking and anti-hogging engine with concurrency safety.',
 };
 
 export default function RootLayout({
@@ -13,10 +13,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
+    <html lang="en">
+      <body className="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased">
         <Navigation />
-        <main className="flex-1 pb-20 sm:pb-8 max-w-5xl mx-auto w-full px-4 pt-4">
+        <main className="flex-1 pb-20 sm:pb-10 max-w-5xl mx-auto w-full px-4 pt-6">
           {children}
         </main>
       </body>
