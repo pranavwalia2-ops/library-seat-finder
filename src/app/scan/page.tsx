@@ -32,7 +32,7 @@ export default function ScanPage() {
     const targetSeat = state.seats[userSeatIndex];
 
     if (targetSeat.code !== cleanCode) {
-      setError(`Code mismatch. Booked ${targetSeat.label} (${targetSeat.code}), entered ${cleanCode}.`);
+      setError(`Code mismatch. Booked ${targetSeat.label} (${targetSeat.code}), scanned ${cleanCode}.`);
       return;
     }
 
@@ -90,69 +90,84 @@ export default function ScanPage() {
   );
 
   return (
-    <div>
-      <h1>Scan QR</h1>
-      <p style={{ margin: '4px 0 16px 0' }}>Scan the QR sticker at your seat or enter the seat code manually.</p>
+    <div className="max-w-md mx-auto space-y-5 pt-2">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Desk QR Check-in</h1>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Scan the QR sticker on the desk or enter the seat code manually.
+        </p>
+      </div>
 
       {error && (
-        <div style={{ color: '#dc2626', marginBottom: '12px' }}>
+        <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-3">
           {error}
         </div>
       )}
 
       {success && (
-        <div style={{ color: '#16a34a', marginBottom: '12px' }}>
+        <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
           {success}
         </div>
       )}
 
-      {/* Camera scanner */}
-      <div style={{ border: '1px solid #000000', padding: '16px', maxWidth: '420px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <strong>Camera scanner</strong>
-          <button onClick={() => setCameraActive(!cameraActive)}>
+      {/* Camera scanner card */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Camera Scanner</span>
+          <button
+            onClick={() => setCameraActive(!cameraActive)}
+            className="text-xs px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 text-white font-medium transition"
+          >
             {cameraActive ? 'Stop camera' : 'Start camera'}
           </button>
         </div>
 
         {cameraActive ? (
-          <div id="qr-reader" style={{ width: '100%' }}></div>
+          <div className="overflow-hidden rounded border border-slate-300 bg-black min-h-[240px]">
+            <div id="qr-reader" className="w-full text-white text-xs"></div>
+          </div>
         ) : (
-          <div style={{ border: '1px solid #999', padding: '24px', textAlign: 'center', background: '#f9f9f9', fontSize: '14px' }}>
-            Camera is inactive. Click &quot;Start camera&quot; or enter the seat code below.
+          <div className="border border-dashed border-slate-200 rounded p-8 text-center text-xs text-slate-500 bg-slate-50">
+            Click &ldquo;Start camera&rdquo; to use your webcam or phone camera to scan desk QR sticker.
           </div>
         )}
       </div>
 
-      {/* Manual input */}
-      <div style={{ border: '1px solid #000000', padding: '16px', maxWidth: '420px' }}>
-        <strong>Manual seat code entry</strong>
+      {/* Manual Code Fallback */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-3">
+        <span className="text-xs font-bold text-slate-800 uppercase tracking-wide block">Manual Seat Code</span>
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleCheckInWithCode(manualCode);
           }}
-          style={{ display: 'flex', gap: '8px', marginTop: '8px' }}
+          className="flex gap-2"
         >
           <input
             type="text"
             value={manualCode}
             onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-            placeholder="e.g. LPU-F1-001"
-            style={{ flex: 1 }}
+            placeholder="e.g. LPU-F1-002"
+            className="flex-1 border border-slate-300 rounded px-3 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-600"
           />
-          <button type="submit" className="primary">
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded text-xs transition"
+          >
             Verify
           </button>
         </form>
 
         {currentSeat && (
-          <div style={{ marginTop: '12px', fontSize: '14px', borderTop: '1px solid #ccc', paddingTop: '8px' }}>
-            <span>Your booked seat code is: <strong>{currentSeat.code}</strong>. </span>
+          <div className="bg-blue-50 rounded p-3 text-xs flex items-center justify-between border border-blue-200">
+            <div>
+              <span className="text-slate-600">Your booked code:</span>
+              <span className="ml-1.5 font-mono text-blue-700 font-bold">{currentSeat.code}</span>
+            </div>
             <button
               type="button"
               onClick={() => handleCheckInWithCode(currentSeat.code)}
-              style={{ padding: '2px 6px', fontSize: '12px' }}
+              className="text-xs font-semibold text-blue-700 hover:underline"
             >
               Auto-fill &amp; check in
             </button>

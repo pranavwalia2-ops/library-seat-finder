@@ -61,131 +61,173 @@ export default function AdminPage() {
   });
 
   return (
-    <div>
-      <h1>Admin</h1>
-      <p style={{ margin: '4px 0 16px 0' }}>Library occupancy, peak hours and hogged seat records.</p>
+    <div className="space-y-6">
+      {/* Top Header Card */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Admin &amp; Anti-Hogging Analytics</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Real-time library occupancy, peak hours footfall, and seat hogging detection.
+          </p>
+        </div>
 
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px' }}>
-        {!isAdmin ? (
-          <button onClick={makeAdmin} className="primary">
-            Switch to admin role
-          </button>
-        ) : (
-          <button onClick={handleGeneratePrintableQRs}>
-            Print QR codes (Floor 1)
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {!isAdmin ? (
+            <button
+              onClick={makeAdmin}
+              className="text-xs bg-amber-500 hover:bg-amber-600 text-white font-medium px-3.5 py-1.5 rounded transition"
+            >
+              Switch to Admin Role
+            </button>
+          ) : (
+            <button
+              onClick={handleGeneratePrintableQRs}
+              className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium px-3.5 py-1.5 rounded transition"
+            >
+              Print QR Codes (Floor 1)
+            </button>
+          )}
+        </div>
       </div>
 
-      <h2>Floor occupancy</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Floor</th>
-            <th>Total</th>
-            <th>Occupied</th>
-            <th>On break</th>
-            <th>Booked</th>
-            <th>Free</th>
-            <th>Occupancy</th>
-          </tr>
-        </thead>
-        <tbody>
-          {floorStats.map((fs) => (
-            <tr key={fs.level}>
-              <td>Floor {fs.level} ({fs.floor})</td>
-              <td>{fs.total}</td>
-              <td>{fs.occupied}</td>
-              <td>{fs.onBreak}</td>
-              <td>{fs.booked}</td>
-              <td>{fs.free}</td>
-              <td>{fs.occupancyRate}%</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Floor Occupancy Progress Bars */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {floorStats.map((fs) => (
+          <div key={fs.level} className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800">Floor {fs.level}</span>
+              <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">
+                {fs.occupancyRate}% Full
+              </span>
+            </div>
 
-      <h2>Peak hours footfall</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Hour</th>
-            <th>Bookings</th>
-          </tr>
-        </thead>
-        <tbody>
-          {state.peakHours.map((ph) => (
-            <tr key={ph.hour}>
-              <td>{ph.hour}</td>
-              <td>{ph.bookings}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden flex">
+              <div style={{ width: `${(fs.occupied / fs.total) * 100}%` }} className="bg-rose-500" title="Occupied"></div>
+              <div style={{ width: `${(fs.onBreak / fs.total) * 100}%` }} className="bg-amber-500" title="On Break"></div>
+              <div style={{ width: `${(fs.booked / fs.total) * 100}%` }} className="bg-blue-500" title="Booked"></div>
+            </div>
 
-      <h2>Top 10 hogged seats</h2>
-      <p style={{ fontSize: '14px', margin: '4px 0 8px 0', color: '#666' }}>
-        Criteria: frequent timeout releases and high ratio of break time to total held time.
-      </p>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Seat</th>
-            <th>Floor</th>
-            <th>Timeouts</th>
-            <th>Break ratio</th>
-            <th>Held time</th>
-          </tr>
-        </thead>
-        <tbody>
-          {state.hoggedMetrics.map((hm, idx) => (
-            <tr key={hm.seat_code}>
-              <td>{idx + 1}</td>
-              <td>{hm.seat_label}</td>
-              <td>{hm.floor_name}</td>
-              <td>{hm.timeout_count} times</td>
-              <td>{hm.break_ratio}%</td>
-              <td>{hm.total_held_minutes} mins</td>
+            <div className="grid grid-cols-3 text-center text-[10px] text-slate-500 pt-0.5">
+              <div><span className="text-rose-600 font-bold block">{fs.occupied}</span>Active</div>
+              <div><span className="text-amber-600 font-bold block">{fs.onBreak}</span>Break</div>
+              <div><span className="text-emerald-600 font-bold block">{fs.free}</span>Free</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Peak Hours Table */}
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <div className="px-5 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-800">Peak Hours Library Footfall</h2>
+          <span className="text-xs text-blue-700 font-mono font-semibold">Peak: 15:00 (118 bookings)</span>
+        </div>
+
+        <table className="w-full text-xs">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Bookings Count</th>
+              <th>Footfall Level</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {state.peakHours.map((ph) => {
+              const pct = Math.round((ph.bookings / 120) * 100);
+              return (
+                <tr key={ph.hour} className="hover:bg-slate-50">
+                  <td className="font-mono font-medium text-slate-800">{ph.hour}</td>
+                  <td className="font-bold text-slate-900">{ph.bookings} students</td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div style={{ width: `${pct}%` }} className="bg-blue-600 h-full"></div>
+                      </div>
+                      <span className="text-[10px] text-slate-500">{pct}% capacity</span>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Top 10 Hogged Seats Table */}
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+        <div className="px-5 py-3 border-b border-slate-200 bg-slate-50">
+          <h2 className="text-sm font-bold text-slate-800">Top 10 Hogged Desks</h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Formula: Desks with high ratio of break time to total held time, and frequent auto-release timeouts.
+          </p>
+        </div>
+
+        <table className="w-full text-xs">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Desk</th>
+              <th>Floor</th>
+              <th>Timeout Releases</th>
+              <th>Break / Idle Ratio</th>
+              <th>Total Time Held</th>
+              <th>Risk Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            {state.hoggedMetrics.map((hm, idx) => (
+              <tr key={hm.seat_code} className="hover:bg-slate-50">
+                <td className="font-mono text-slate-400">#{idx + 1}</td>
+                <td className="font-bold font-mono text-slate-900">{hm.seat_label}</td>
+                <td className="text-slate-600">{hm.floor_name}</td>
+                <td className="font-bold text-rose-600">{hm.timeout_count} times</td>
+                <td>
+                  <span className="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                    {hm.break_ratio}%
+                  </span>
+                </td>
+                <td className="text-slate-700">{hm.total_held_minutes} mins</td>
+                <td>
+                  <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+                    High Hog
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* QR print modal */}
       {qrSheetOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px'
-        }}>
-          <div style={{
-            background: '#ffffff',
-            border: '1px solid #000000',
-            padding: '16px',
-            maxWidth: '680px',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h3 style={{ margin: 0 }}>QR codes sheet</h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => window.print()} className="primary">Print</button>
-                <button onClick={() => setQrSheetOpen(false)}>Close</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+          <div className="bg-white border border-slate-300 rounded-lg max-w-2xl w-full p-5 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div>
+                <h4 className="font-bold text-slate-900 text-base">SeatSync QR Sticker Sheet (Floor 1)</h4>
+                <p className="text-xs text-slate-500">Print and paste onto corresponding study desks</p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded text-xs"
+                >
+                  Print / Save PDF
+                </button>
+                <button
+                  onClick={() => setQrSheetOpen(false)}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium px-3 py-1.5 rounded text-xs border border-slate-200"
+                >
+                  Close
+                </button>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+
+            <div className="grid grid-cols-4 gap-3 p-1">
               {Object.entries(qrDataUrls).map(([code, dataUrl]) => (
-                <div key={code} style={{ border: '1px solid #999', padding: '8px', textAlign: 'center' }}>
-                  <img src={dataUrl} alt={code} style={{ width: '100px', height: '100px', margin: '0 auto' }} />
-                  <div style={{ fontSize: '12px', marginTop: '4px', fontFamily: 'monospace' }}>{code}</div>
+                <div key={code} className="border border-slate-200 rounded p-2 text-center bg-slate-50">
+                  <img src={dataUrl} alt={code} className="w-20 h-20 mx-auto" />
+                  <div className="text-[10px] font-mono font-bold text-slate-800 mt-1">{code}</div>
                 </div>
               ))}
             </div>
