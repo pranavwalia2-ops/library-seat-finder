@@ -2,55 +2,114 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
-   BASE RESET & BACKGROUND
-   ============================================================ */
+/* ============================================================================
+   1. BASE RESET & FLUID ANIMATED BACKGROUND (Cheap on GPU)
+   ============================================================================ */
 
 * {
   box-sizing: border-box;
 }
 
-html, body {
+html {
+  min-height: 100vh;
+  /* Base soft diagonal gradient with faint 3% grid overlay */
+  background-color: #eaf1ff;
+  background-image: 
+    linear-gradient(rgba(37, 99, 235, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.03) 1px, transparent 1px),
+    linear-gradient(135deg, #eaf1ff 0%, #e3e8ff 45%, #f1ecff 100%);
+  background-size: 32px 32px, 32px 32px, 100% 100%;
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   color: #0f172a;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: system-ui, 'Segoe UI', Arial, sans-serif;
   font-size: 15px;
   line-height: 1.5;
-
-  /* Soft diagonal fixed gradient */
-  background: linear-gradient(135deg, #e8f0ff 0%, #dbe7ff 50%, #eef2ff 100%);
-  background-attachment: fixed;
-  background-size: cover;
+  background: transparent;
   overflow-x: hidden;
+  position: relative;
 }
 
-/* Two large blurred radial blobs behind content */
+/* Three large blurred fluid blobs (Blue, Indigo, Violet at ~40% opacity)
+   GPU-accelerated using transform only (translate & scale), 22s-32s drift */
+html::before,
 body::before,
 body::after {
   content: '';
   position: fixed;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
+  width: 45vmax;
+  height: 45vmax;
   filter: blur(80px);
+  will-change: transform;
 }
 
+/* Blob 1: Soft Blue (#60a5fa) */
+html::before {
+  top: -12vmax;
+  left: -8vmax;
+  background: radial-gradient(circle at center, rgba(96, 165, 250, 0.40) 0%, transparent 68%);
+  animation: driftBlobBlue 24s ease-in-out infinite alternate;
+}
+
+/* Blob 2: Vibrant Indigo (#818cf8) */
 body::before {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, rgba(147, 180, 255, 0.35) 0%, transparent 70%);
-  top: -80px;
-  right: -80px;
+  top: 18vh;
+  right: -10vmax;
+  background: radial-gradient(circle at center, rgba(129, 140, 248, 0.40) 0%, transparent 68%);
+  animation: driftBlobIndigo 28s ease-in-out infinite alternate -7s;
 }
 
+/* Blob 3: Warm Violet (#a78bfa) */
 body::after {
-  width: 480px;
-  height: 480px;
-  background: radial-gradient(circle, rgba(185, 183, 255, 0.35) 0%, transparent 70%);
-  bottom: -60px;
-  left: -60px;
+  bottom: -12vmax;
+  left: 18vw;
+  background: radial-gradient(circle at center, rgba(167, 139, 250, 0.40) 0%, transparent 68%);
+  animation: driftBlobViolet 32s ease-in-out infinite alternate -14s;
+}
+
+@keyframes driftBlobBlue {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(8vw, 12vh) scale(1.12);
+  }
+  100% {
+    transform: translate(-6vw, 16vh) scale(0.94);
+  }
+}
+
+@keyframes driftBlobIndigo {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-10vw, 14vh) scale(1.08);
+  }
+  100% {
+    transform: translate(-4vw, -8vh) scale(0.92);
+  }
+}
+
+@keyframes driftBlobViolet {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(12vw, -10vh) scale(1.15);
+  }
+  100% {
+    transform: translate(-8vw, -12vh) scale(0.96);
+  }
 }
 
 main, header, nav, footer, .app-container {
@@ -58,9 +117,25 @@ main, header, nav, footer, .app-container {
   z-index: 1;
 }
 
-/* ============================================================
-   TYPOGRAPHY
-   ============================================================ */
+/* Page entrance animation: fades and slides up 8px in 300ms */
+@keyframes pageContentEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main {
+  animation: pageContentEnter 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ============================================================================
+   2. TYPOGRAPHY & SPACING
+   ============================================================================ */
 
 a {
   color: #2563eb;
@@ -73,38 +148,58 @@ a:hover {
 }
 
 h1 {
-  font-size: 22px;
-  font-weight: 600;
-  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 6px 0;
   color: #0f172a;
+  letter-spacing: -0.02em;
 }
 
 h2 {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   color: #0f172a;
 }
 
-/* ============================================================
-   GLASS PANELS & CARDS
-   ============================================================ */
+p {
+  color: #475569;
+}
+
+/* Tabular nums for all countdown timers, metrics, and tables */
+.tabular-nums,
+.summary-number,
+table,
+td,
+th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================================
+   3. GLASS SURFACES (Panels, Header, Tab Bar, Summary Cards, Tables)
+   ============================================================================ */
 
 .panel {
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(30, 64, 175, 0.08);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   margin-bottom: 24px;
   overflow: hidden;
+  transition: box-shadow 200ms ease;
+}
+
+.panel:hover {
+  box-shadow: 0 12px 34px rgba(37, 99, 235, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .panel-header {
-  background: rgba(255, 255, 255, 0.4);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
-  padding: 14px 20px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.65);
+  padding: 14px 20px 14px 22px;
   font-size: 15px;
   font-weight: 600;
   color: #0f172a;
@@ -113,21 +208,34 @@ h2 {
   justify-content: space-between;
 }
 
+/* Panel heading gradient accent bar on the left (4px, blue #2563eb to violet #7c3aed) */
+.panel-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #2563eb 0%, #7c3aed 100%);
+}
+
 .panel-body {
   padding: 20px;
 }
 
-/* Glass Header & Tab bar helper classes */
+/* Glass Header & Tab Navigation Bar */
 .glass-header {
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 4px 16px rgba(30, 64, 175, 0.04);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   width: 100%;
 }
 
 .glass-nav-tab {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -137,22 +245,49 @@ h2 {
   color: #0f172a;
   text-decoration: none;
   border-bottom: 3px solid transparent;
-  transition: all 0.15s ease;
+  transition: color 150ms ease;
   white-space: nowrap;
+}
+
+.glass-nav-tab:hover {
+  color: #2563eb;
+}
+
+/* Animated sliding gradient underline on hover and active */
+.glass-nav-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 14px;
+  right: 14px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-nav-tab:hover::after {
+  transform: scaleX(1);
 }
 
 .glass-nav-tab.active {
   color: #2563eb;
   font-weight: 600;
-  border-bottom: 3px solid #2563eb;
+  border-bottom-color: transparent !important;
 }
 
-/* ============================================================
-   BUTTONS
-   ============================================================ */
+.glass-nav-tab.active::after {
+  transform: scaleX(1);
+}
+
+/* ============================================================================
+   4. BUTTONS & CONTROLS (Hover lift, active press, moving sheen)
+   ============================================================================ */
 
 button, .btn {
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(203, 213, 225, 0.8);
   background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -166,104 +301,113 @@ button, .btn {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: 8px;
-  transition: all 0.15s ease;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              background 150ms ease,
+              border-color 150ms ease;
 }
 
 button:hover, .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.16);
   background: rgba(255, 255, 255, 0.9);
   border-color: #94a3b8;
-  transform: translateY(-1px);
 }
 
 button:active, .btn:active {
-  transform: translateY(0);
+  transform: translateY(1px);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.12);
 }
 
-button.primary, .btn-primary {
-  background: #2563eb !important;
+/* Primary Button: Gradient #2563eb to #7c3aed with soft moving sheen */
+button.primary,
+.btn-primary,
+button[style*="background: #2563eb"],
+button[style*="background:#2563eb"] {
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important;
   color: #ffffff !important;
-  border: 1px solid #2563eb !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
 }
 
-button.primary:hover, .btn-primary:hover {
-  background: #1d4ed8 !important;
-  border-color: #1d4ed8 !important;
+button.primary:hover,
+.btn-primary:hover,
+button[style*="background: #2563eb"]:hover,
+button[style*="background:#2563eb"]:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #6d28d9 100%) !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+button.primary::after,
+.btn-primary::after,
+button[style*="background: #2563eb"]::after,
+button[style*="background:#2563eb"]::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -70%;
+  width: 45%;
+  height: 200%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
+  transform: rotate(25deg);
+  transition: transform 600ms ease;
+  pointer-events: none;
+  opacity: 0;
+}
+
+button.primary:hover::after,
+.btn-primary:hover::after,
+button[style*="background: #2563eb"]:hover::after,
+button[style*="background:#2563eb"]:hover::after {
+  opacity: 1;
+  transform: rotate(25deg) translate(340%, 0);
 }
 
 button.secondary-glass, .btn-secondary-glass {
-  background: rgba(255, 255, 255, 0.55);
-  border: 1px solid #bfdbfe;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(191, 219, 254, 0.9);
   color: #1d4ed8;
 }
 
 button.secondary-glass:hover, .btn-secondary-glass:hover {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
   border-color: #93c5fd;
+  color: #1e40af;
 }
 
-/* ============================================================
-   INPUTS & FORMS
-   ============================================================ */
+/* ============================================================================
+   5. INPUTS & FORMS (Focus 3px blue ring transition)
+   ============================================================================ */
 
 input[type="text"], input[type="number"], select {
-  height: 36px;
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.65);
+  height: 38px;
+  border: 1px solid rgba(203, 213, 225, 0.85);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  padding: 0 12px;
+  padding: 0 14px;
   font-family: inherit;
   font-size: 14px;
   color: #0f172a;
   outline: none;
-  border-radius: 8px;
-  transition: all 0.15s ease;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
 }
 
 input[type="text"]:focus, input[type="number"]:focus, select:focus {
   background: rgba(255, 255, 255, 0.95);
   border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
 }
 
-/* ============================================================
-   TABLES
-   ============================================================ */
-
-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.6);
-}
-
-th, td {
-  padding: 10px 14px;
-  text-align: left;
-  font-size: 14px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
-}
-
-tr:last-child td {
-  border-bottom: none;
-}
-
-th {
-  background: rgba(255, 255, 255, 0.5);
-  font-weight: 600;
-  color: #475569;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
-  font-size: 12px;
-  text-transform: uppercase;
-}
-
-/* ============================================================
-   SUMMARY CARDS (4 Equal Glass Cards)
-   ============================================================ */
+/* ============================================================================
+   6. SUMMARY CARDS (Hover 2px lift, gradient for total, solid semantics)
+   ============================================================================ */
 
 .summary-strip {
   display: grid;
@@ -274,12 +418,19 @@ th {
 
 .summary-box {
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 14px;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 8px 24px rgba(30, 64, 175, 0.08);
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.summary-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(37, 99, 235, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .summary-label {
@@ -298,14 +449,32 @@ th {
   margin-bottom: 6px;
 }
 
+/* Gradient text for Total capacity / main counter */
+.summary-box:first-child .summary-number,
+.summary-number.total-metric {
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* Solid semantic status numbers */
+.summary-box:nth-child(2) .summary-number {
+  color: #16a34a !important; /* Free */
+}
+
+.summary-box:nth-child(3) .summary-number {
+  color: #d97706 !important; /* On break (Amber) */
+}
+
 .summary-caption {
   font-size: 13px;
   color: #475569;
 }
 
-/* ============================================================
-   MAP: SEAT GRID & CELLS (Lightweight, No Lag)
-   ============================================================ */
+/* ============================================================================
+   7. MAP: SEAT GRID & CELLS (Lightweight, zero phone lag, subtle lift hover)
+   ============================================================================ */
 
 .seat-grid-container {
   display: grid;
@@ -315,41 +484,60 @@ th {
 }
 
 .seat-cell {
+  position: relative;
   min-height: 44px;
   height: 44px;
   width: 100%;
   font-size: 13px;
   font-weight: 700;
-  color: #ffffff;
+  color: #ffffff !important;
   border-radius: 8px;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.1s ease;
   user-select: none;
+  /* NO backdrop-filter, NO blur, NO heavy shadows on 500 seats to prevent phone lag */
+  /* 1px lighter top border for clean tactile depth */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 .seat-cell:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px) scale(1.04);
+  z-index: 2;
 }
 
 .seat-cell:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
-/* ============================================================
-   MAP: FILTER CHIPS & SEARCH
-   ============================================================ */
+/* Flat, solid semantic colors for seats */
+.seat-cell[style*="#16a34a"], .seat-cell[style*="rgb(22, 163, 74)"] {
+  background: #22c55e !important; /* Free green */
+}
+
+.seat-cell[style*="#dc2626"], .seat-cell[style*="rgb(220, 38, 38)"] {
+  background: #ef4444 !important; /* Occupied red */
+}
+
+.seat-cell[style*="#f59e0b"], .seat-cell[style*="rgb(245, 158, 11)"] {
+  background: #f59e0b !important; /* On break amber */
+}
+
+/* ============================================================================
+   8. FILTER CHIPS & FLOOR PILLS
+   ============================================================================ */
 
 .filter-chip {
   height: 36px;
   padding: 0 14px;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.8);
@@ -358,69 +546,281 @@ th {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.15s ease;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .filter-chip:hover {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
 }
 
 .filter-chip.active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
   font-weight: 600;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
 }
 
-/* Floor pill */
+/* Floor pill: Selected has gradient and soft glow */
 .floor-pill {
-  padding: 8px 16px;
-  border-radius: 20px;
+  padding: 8px 18px;
+  border-radius: 9999px;
   font-size: 13px;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.85);
   color: #0f172a;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .floor-pill:hover {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
 }
 
 .floor-pill.active {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
   font-weight: 600;
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.35) !important;
 }
 
-/* ============================================================
-   RESPONSIVE DESIGN (UNDER 700PX)
-   ============================================================ */
+/* ============================================================================
+   9. TABLES (Sticky header, translucent row, hover tint, rounded corners)
+   ============================================================================ */
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.06);
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(241, 245, 249, 0.85) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #475569;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+}
+
+tbody tr {
+  transition: background 150ms ease;
+}
+
+tbody tr:hover {
+  background: rgba(239, 246, 255, 0.6) !important;
+}
+
+td {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: #0f172a;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ============================================================================
+   10. STATUS TOASTS & TURNSTILE GATE PULSES
+   ============================================================================ */
+
+@keyframes statusToastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Target alert/notification banners across map, my-seat, scan, gate, admin */
+div[style*="f0fdf4"],
+div[style*="fef2f2"],
+div[style*="eff6ff"],
+div[style*="fef3c7"] {
+  animation: statusToastFadeIn 250ms ease-out forwards;
+}
+
+/* Turnstile Gate feedback: Soft pulse ONCE (not looping) */
+@keyframes gateSoftPulseSuccess {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    transform: scale(1.015);
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+
+@keyframes gateSoftPulseError {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    transform: scale(1.015);
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+
+div[style*="#f0fdf4"] {
+  animation: gateSoftPulseSuccess 450ms ease-out 1;
+}
+
+div[style*="#fef2f2"] {
+  animation: gateSoftPulseError 450ms ease-out 1;
+}
+
+/* Scanner laser sweep line */
+.laser-scanner-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #22c55e, transparent);
+  box-shadow: 0 0 8px #22c55e;
+  animation: scanLaser 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes scanLaser {
+  0% {
+    top: 15%;
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 85%;
+    opacity: 0.3;
+  }
+}
+
+/* ============================================================================
+   11. MOBILE & RESPONSIVE DESIGN (Under 700px)
+   ============================================================================ */
 
 @media (max-width: 700px) {
+  html::before,
+  body::before,
+  body::after {
+    width: 38vmax;
+    height: 38vmax;
+    filter: blur(50px);
+  }
+
+  .panel {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 12px;
+    margin-bottom: 18px;
+  }
+
+  .panel-body {
+    padding: 14px;
+  }
+
   .summary-strip {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
+    margin-bottom: 20px;
   }
+
+  .summary-box {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .summary-number {
+    font-size: 26px;
+  }
+
   .seat-grid-container {
     grid-template-columns: repeat(6, 1fr);
     gap: 6px;
   }
+
   .seat-cell {
     min-height: 40px;
     height: 40px;
     font-size: 11px;
   }
+
   .header-content {
     flex-direction: column;
     align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .glass-header > div:last-child {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .glass-nav-tab {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+/* ============================================================================
+   12. ACCESSIBILITY: PREFERS REDUCED MOTION
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  html::before,
+  body::before,
+  body::after,
+  main,
+  .laser-scanner-line,
+  button.primary::after {
+    animation: none !important;
   }
 }
