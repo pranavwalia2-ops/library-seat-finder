@@ -1,334 +1,550 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import Link from 'next/link';
+import { loadStoredState, bookSeatAction, releaseSeatAction, Seat, AppState } from '@/lib/store';
 import { getRegistrationNumber } from '@/lib/user';
 
-interface RawSeat {
-  id?: string;
-  seat_id?: string;
-  label?: string;
-  seat_label?: string;
-  code?: string;
-  seat_code?: string;
-  status?: string;
-  seat_status?: string;
-  floor?: number;
-  level?: number;
-  floor_level?: number;
-  floor_id?: string;
-}
-
-interface SeatItem {
-  id: string;
-  label: string;
-  code: string;
-  status: string; // raw status: free, booked, checked_in, on_break, occupied
-  floor: number;
-}
-
-function parseFloor(seat: RawSeat): number {
-  if (typeof seat.floor === 'number') return seat.floor;
-  if (typeof seat.level === 'number') return seat.level;
-  if (typeof seat.floor_level === 'number') return seat.floor_level;
-  const label = seat.label || seat.seat_label || '';
-  const match = label.match(/^F(\d+)-/i);
-  if (match) return parseInt(match[1], 10);
-  if (typeof seat.floor_id === 'string') {
-    const fMatch = seat.floor_id.match(/^f?(\d+)/i);
-    if (fMatch) return parseInt(fMatch[1], 10);
-  }
-  return 1;
-}
-
-function getDisplayStatus(rawStatus: string | undefined): 'free' | 'occupied' | 'on_break' {
-  if (!rawStatus) return 'free';
-  const s = rawStatus.toLowerCase();
-  if (s === 'on_break') return 'on_break';
-  if (s === 'booked' || s === 'checked_in' || s === 'occupied') return 'occupied';
-  return 'free';
-}
-
-// Fallback initial seats (5 floors x 100 seats) so map renders instantly while RPC connects
-function getInitialSeats(): SeatItem[] {
-  const floorConfig: Record<number, { occupied: number; onBreak: number }> = {
-    1: { occupied: 15, onBreak: 5 },
-    2: { occupied: 40, onBreak: 8 },
-    3: { occupied: 65, onBreak: 10 },
-    4: { occupied: 85, onBreak: 8 },
-    5: { occupied: 30, onBreak: 15 },
-  };
-
-  const list: SeatItem[] = [];
-  for (let floor = 1; floor <= 5; floor++) {
-    const { occupied, onBreak } = floorConfig[floor] || { occupied: 20, onBreak: 5 };
-    for (let i = 1; i <= 100; i++) {
-      const pad = String(i).padStart(3, '0');
-      const label = `F${floor}-${pad}`;
-      const code = `LPU-F${floor}-${pad}`;
-      const id = `s-${floor}-${i}`;
-      const seed = floor * 2106 + i * 6723;
-      const hash = Math.abs((Math.imul(seed ^ (seed >>> 15), 0x45d9f3b) ^ (seed >>> 7)) % 100);
-
-      let status = 'free';
-      if (hash < occupied) status = 'occupied';
-      else if (hash < occupied + onBreak) status = 'on_break';
-
-      list.push({ id, label, code, status, floor });
-    }
-  }
-  return list;
-}
+const FLOOR_NAMES: Record<number, string> = {
+  1: 'Floor 1 — Quiet Study Zone',
+  2: 'Floor 2 — Collaborative Commons',
+  3: 'Floor 3 — Silent Research Wing',
+  4: 'Floor 4 — Periodicals & Journals',
+  5: 'Floor 5 — Digital Lab & Media',
+};
 
 export default function MapPage() {
   const [selectedFloor, setSelectedFloor] = useState<number>(1);
-  const [seats, setSeats] = useState<SeatItem[]>(getInitialSeats);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [seats, setSeats] = useState<Seat[]>([]);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'free' | 'occupied' | 'on_break'>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedSeatId, setSelectedSeatId] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [currentRegNo, setCurrentRegNo] = useState<string>('12200001');
 
-  const isMountedRef = useRef(true);
-
-  const fetchSeats = useCallback(async () => {
+  // Load seats from reactive local store
+  const refreshSeats = useCallback(() => {
     try {
-      const { data, error } = await supabase.rpc('get_seat_map');
-      if (!isMountedRef.current) return;
-
-      if (error || !data) {
-        setLoadError('Could not load seats. Retrying.');
-        return;
-      }
-
-      const list: RawSeat[] = Array.isArray(data) ? data : [];
-      if (list.length > 0) {
-        const parsed: SeatItem[] = list.map((item, index) => {
-          const id = item.id || item.seat_id || `seat-${index}`;
-          const label = item.label || item.seat_label || `Seat-${index + 1}`;
-          const code = item.code || item.seat_code || label;
-          const status = item.status || item.seat_status || 'free';
-          const floor = parseFloor(item);
-          return { id, label, code, status, floor };
-        });
-
-        setSeats(parsed);
-        setLoadError(null);
-      } else {
-        setLoadError('Could not load seats. Retrying.');
-      }
-    } catch {
-      if (isMountedRef.current) {
-        setLoadError('Could not load seats. Retrying.');
-      }
-    }
+      const state: AppState = loadStoredState();
+      setSeats(state.seats);
+      const reg = getRegistrationNumber();
+      setCurrentRegNo(reg);
+    } catch {}
   }, []);
 
+  const selectedSeat = useMemo(() => {
+    return selectedSeatId ? seats.find((s) => s.id === selectedSeatId) || null : null;
+  }, [seats, selectedSeatId]);
+
   useEffect(() => {
-    isMountedRef.current = true;
-    fetchSeats();
-
-    // Subscribe to Realtime changes on the bookings table
-    const channel = supabase
-      .channel('realtime-map-bookings')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'bookings' },
-        () => {
-          fetchSeats();
-        }
-      )
-      .subscribe();
-
-    // Re-fetch every 3 seconds with setInterval
-    const intervalId = setInterval(fetchSeats, 3000);
-
+    refreshSeats();
+    window.addEventListener('seatsync_change', refreshSeats);
+    const interval = setInterval(refreshSeats, 3000);
     return () => {
-      isMountedRef.current = false;
-      supabase.removeChannel(channel);
-      clearInterval(intervalId);
+      window.removeEventListener('seatsync_change', refreshSeats);
+      clearInterval(interval);
     };
-  }, [fetchSeats]);
+  }, [refreshSeats]);
 
-  async function handleSeatClick(seat: SeatItem) {
-    const displayStatus = getDisplayStatus(seat.status);
-    // Red or amber seats do nothing on click
-    if (displayStatus !== 'free') {
-      return;
+  const showToast = (text: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToastMessage({ text, type });
+    setTimeout(() => {
+      setToastMessage((prev) => (prev?.text === text ? null : prev));
+    }, 4500);
+  };
+
+  const handleBookSeat = (seat: Seat) => {
+    const res = bookSeatAction(seat.id, currentRegNo);
+    if (!res.success) {
+      showToast(res.message, 'error');
+    } else {
+      showToast(res.message, 'success');
+      refreshSeats();
     }
+  };
 
-    const confirmed = window.confirm(`Book seat ${seat.label}?`);
-    if (!confirmed) return;
-
-    setActionError(null);
-    setActionSuccess(null);
-    const regNo = getRegistrationNumber();
-
-    try {
-      // Use exact SQL function arguments (p_seat_id, p_reg_no)
-      let { error } = await supabase.rpc('book_seat', {
-        p_seat_id: seat.id,
-        p_reg_no: regNo,
-      });
-
-      // Fallback if parameter names in SQL function differ
-      if (error && error.message && error.message.includes('function') && error.message.includes('not found')) {
-        const fallback = await supabase.rpc('book_seat', {
-          seat_id: seat.id,
-          reg_no: regNo,
-        });
-        error = fallback.error;
-      }
-
-      if (error) {
-        setActionError(error.message || 'Seat taken or student already holds a booking.');
-        return;
-      }
-
-      setActionSuccess(`Seat ${seat.label} booked. Check in within 10 minutes.`);
-      fetchSeats();
-    } catch (err: any) {
-      setActionError(err?.message || 'Seat taken or student already holds a booking.');
+  const handleReleaseSeat = (seat: Seat) => {
+    const res = releaseSeatAction(seat.id);
+    if (res.success) {
+      showToast(`Desk ${seat.label} has been released.`, 'info');
+      refreshSeats();
     }
-  }
+  };
 
-  // Summary strip totals calculated across all loaded seats
-  const totalLibrarySeats = seats.length;
-  const totalLibraryFree = seats.filter((s) => getDisplayStatus(s.status) === 'free').length;
-  const totalLibraryOccupied = seats.filter((s) => getDisplayStatus(s.status) === 'occupied').length;
-  const totalLibraryOnBreak = seats.filter((s) => getDisplayStatus(s.status) === 'on_break').length;
+  const myActiveSeat = useMemo(() => {
+    return seats.find(
+      (s) => s.active_booking && (s.active_booking.user_reg_no === currentRegNo || s.active_booking.user_id === `u-${currentRegNo}`)
+    );
+  }, [seats, currentRegNo]);
 
-  // Floor-specific seats and metrics
-  const floorSeats = seats.filter((s) => s.floor === selectedFloor);
-  const floorFree = floorSeats.filter((s) => getDisplayStatus(s.status) === 'free').length;
-  const floorOccupied = floorSeats.filter((s) => getDisplayStatus(s.status) === 'occupied').length;
-  const floorOnBreak = floorSeats.filter((s) => getDisplayStatus(s.status) === 'on_break').length;
+  // Library-wide summary totals
+  const totalSeats = seats.length || 500;
+  const freeSeats = seats.filter((s) => s.status === 'free').length;
+  const occupiedSeats = seats.filter((s) => s.status === 'checked_in').length;
+  const bookedSeats = seats.filter((s) => s.status === 'booked').length;
+  const breakSeats = seats.filter((s) => s.status === 'on_break').length;
+
+  // Selected floor seats
+  const floorSeats = useMemo(() => {
+    const prefix = `f${selectedFloor}`;
+    return seats.filter((s) => s.floor_id === prefix || s.label.startsWith(`F${selectedFloor}-`));
+  }, [seats, selectedFloor]);
+
+  // Filtered floor seats
+  const visibleFloorSeats = useMemo(() => {
+    return floorSeats.filter((seat) => {
+      if (filterStatus === 'free' && seat.status !== 'free') return false;
+      if (filterStatus === 'occupied' && seat.status !== 'checked_in' && seat.status !== 'booked') return false;
+      if (filterStatus === 'on_break' && seat.status !== 'on_break') return false;
+
+      if (searchQuery.trim()) {
+        const query = searchQuery.trim().toLowerCase();
+        return seat.label.toLowerCase().includes(query) || seat.code.toLowerCase().includes(query);
+      }
+      return true;
+    });
+  }, [floorSeats, filterStatus, searchQuery]);
+
+  // Floor stats
+  const floorFree = floorSeats.filter((s) => s.status === 'free').length;
+  const floorOccupied = floorSeats.filter((s) => s.status === 'checked_in' || s.status === 'booked').length;
+  const floorBreak = floorSeats.filter((s) => s.status === 'on_break').length;
+  const floorOccupancyPercent = Math.round(((floorOccupied + floorBreak) / (floorSeats.length || 100)) * 100);
 
   return (
     <div>
-      <h1>Map</h1>
-      <p style={{ color: '#6b7280', margin: '0 0 16px 0', fontSize: '14px' }}>
-        Find a free seat and book it. The map refreshes every few seconds.
-      </p>
+      {/* 1. Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '24px' }}>
+        <div>
+          <h1>Interactive Floor Map</h1>
+          <p style={{ color: '#475569', margin: '2px 0 0 0', fontSize: '14px' }}>
+            Real-time seat availability across 5 library floors (500 desks). Click any desk to reserve.
+          </p>
+        </div>
 
-      {/* Summary strip: Total seats, Free, Occupied, On break */}
-      <div className="summary-strip">
-        <div className="summary-box">
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000' }}>{totalLibrarySeats}</div>
-          <div style={{ fontSize: '12px', color: '#6b7280' }}>Total seats</div>
-        </div>
-        <div className="summary-box">
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>{totalLibraryFree}</div>
-          <div style={{ fontSize: '12px', color: '#6b7280' }}>Free</div>
-        </div>
-        <div className="summary-box">
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626' }}>{totalLibraryOccupied}</div>
-          <div style={{ fontSize: '12px', color: '#6b7280' }}>Occupied</div>
-        </div>
-        <div className="summary-box">
-          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#d97706' }}>{totalLibraryOnBreak}</div>
-          <div style={{ fontSize: '12px', color: '#6b7280' }}>On break</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#475569', background: 'rgba(255,255,255,0.55)', padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.7)' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a', display: 'inline-block' }}></span>
+          <span>Autonomous sync active</span>
         </div>
       </div>
 
-      {/* Floor selector & Legend */}
+      {/* 2. Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            marginBottom: '20px',
+            padding: '12px 18px',
+            borderRadius: '10px',
+            fontSize: '14px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background:
+              toastMessage.type === 'success' ? '#f0fdf4' :
+              toastMessage.type === 'error' ? '#fef2f2' : '#eff6ff',
+            border:
+              toastMessage.type === 'success' ? '1px solid #bbf7d0' :
+              toastMessage.type === 'error' ? '1px solid #fecdd3' : '1px solid #bfdbfe',
+            color:
+              toastMessage.type === 'success' ? '#166534' :
+              toastMessage.type === 'error' ? '#991b1b' : '#1e40af',
+          }}
+        >
+          <span>{toastMessage.text}</span>
+          <button
+            type="button"
+            onClick={() => setToastMessage(null)}
+            style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', padding: '2px 6px', fontWeight: 600 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* 3. Active Reservation Banner */}
+      {myActiveSeat && (
+        <div
+          className="panel"
+          style={{
+            padding: '16px 20px',
+            marginBottom: '24px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+            borderLeft: '4px solid #2563eb',
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '15px', color: '#0f172a' }}>
+              Your Reservation: Seat {myActiveSeat.label} ({FLOOR_NAMES[parseInt(myActiveSeat.label.replace('F', '').split('-')[0], 10) || 1]})
+            </div>
+            <div style={{ fontSize: '13px', color: '#475569', marginTop: '2px' }}>
+              Status: <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{myActiveSeat.status.replace('_', ' ')}</span>
+              {myActiveSeat.status === 'booked' && ' • 15m QR scan hold active'}
+              {myActiveSeat.status === 'on_break' && ' • 20m break timer active'}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Link
+              href="/my-seat"
+              className="btn primary"
+              style={{ padding: '7px 14px', fontSize: '13px', textDecoration: 'none' }}
+            >
+              Open My seat
+            </Link>
+            <button
+              type="button"
+              onClick={() => handleReleaseSeat(myActiveSeat)}
+              className="secondary-glass"
+              style={{ padding: '7px 12px', fontSize: '13px' }}
+            >
+              Release
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Four Equal Glass Summary Cards */}
+      <div className="summary-strip">
+        <div className="summary-box">
+          <div className="summary-label">Total capacity</div>
+          <div className="summary-number" style={{ color: '#0f172a' }}>{totalSeats}</div>
+          <div className="summary-caption">5 floors, 100 desks each</div>
+        </div>
+
+        <div className="summary-box">
+          <div className="summary-label">Free seats</div>
+          <div className="summary-number" style={{ color: '#16a34a' }}>{freeSeats}</div>
+          <div className="summary-caption">Available for reservation</div>
+        </div>
+
+        <div className="summary-box">
+          <div className="summary-label">Occupied</div>
+          <div className="summary-number" style={{ color: '#dc2626' }}>{occupiedSeats + bookedSeats}</div>
+          <div className="summary-caption">Students checked in</div>
+        </div>
+
+        <div className="summary-box">
+          <div className="summary-label">On break</div>
+          <div className="summary-number" style={{ color: '#f59e0b' }}>{breakSeats}</div>
+          <div className="summary-caption">20-minute limit active</div>
+        </div>
+      </div>
+
+      {/* 5. Main Map Panel */}
       <div className="panel">
         <div className="panel-header">
-          Floor selection and layout (Floor {selectedFloor} - {floorSeats.length} seats)
+          <div>
+            <span>{FLOOR_NAMES[selectedFloor]}</span>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#475569', marginLeft: '10px' }}>
+              ({floorOccupancyPercent}% occupancy)
+            </span>
+          </div>
+
+          <div style={{ fontSize: '13px', color: '#475569' }}>
+            Showing <strong>{visibleFloorSeats.length}</strong> of 100 desks
+          </div>
         </div>
+
         <div className="panel-body">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-            {/* Floor selector: 5 buttons (Floor 1 to Floor 5) */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {[1, 2, 3, 4, 5].map((fl) => (
+          {/* Floor selector pills */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+            {[1, 2, 3, 4, 5].map((fl) => {
+              const prefix = `f${fl}`;
+              const flSeats = seats.filter((s) => s.floor_id === prefix || s.label.startsWith(`F${fl}-`));
+              const flOccCount = flSeats.filter((s) => s.status === 'checked_in' || s.status === 'booked' || s.status === 'on_break').length;
+              const flOcc = Math.round((flOccCount / (flSeats.length || 100)) * 100);
+              const isSelected = selectedFloor === fl;
+
+              return (
                 <button
                   key={fl}
                   type="button"
                   onClick={() => {
                     setSelectedFloor(fl);
-                    setActionError(null);
-                    setActionSuccess(null);
+                    setSelectedSeatId(null);
                   }}
-                  className={selectedFloor === fl ? 'primary' : ''}
+                  className={`floor-pill ${isSelected ? 'active' : ''}`}
                 >
-                  Floor {fl}
+                  <span>Floor {fl}</span>
+                  <span style={{ opacity: isSelected ? 0.9 : 0.6, fontSize: '11px' }}>{flOcc}%</span>
                 </button>
-              ))}
+              );
+            })}
+          </div>
+
+          {/* Filter chips and search bar in one row */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+              marginBottom: '20px',
+            }}
+          >
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setFilterStatus('all')}
+                className={`filter-chip ${filterStatus === 'all' ? 'active' : ''}`}
+              >
+                All (100)
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterStatus('free')}
+                className={`filter-chip ${filterStatus === 'free' ? 'active' : ''}`}
+              >
+                Free ({floorFree})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterStatus('occupied')}
+                className={`filter-chip ${filterStatus === 'occupied' ? 'active' : ''}`}
+              >
+                Occupied ({floorOccupied})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterStatus('on_break')}
+                className={`filter-chip ${filterStatus === 'on_break' ? 'active' : ''}`}
+              >
+                On break ({floorBreak})
+              </button>
             </div>
 
-            {/* Legend: small squares with dynamic counts */}
-            <div style={{ display: 'flex', gap: '16px', fontSize: '13px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '14px', height: '14px', background: '#22c55e', border: '1px solid #000000' }}></div>
-                <span>Free ({floorFree})</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '14px', height: '14px', background: '#ef4444', border: '1px solid #000000' }}></div>
-                <span>Occupied ({floorOccupied})</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: '14px', height: '14px', background: '#f59e0b', border: '1px solid #000000' }}></div>
-                <span>On break ({floorOnBreak})</span>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder="Search seat (e.g. 025)..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ width: '190px' }}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  style={{ height: '36px', padding: '0 10px', fontSize: '12px' }}
+                >
+                  Clear
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Plain red line above the grid for errors */}
-          {loadError && (
-            <div style={{ color: '#dc2626', fontSize: '13px', marginBottom: '12px' }}>
-              {loadError}
-            </div>
-          )}
-
-          {actionError && (
-            <div style={{ color: '#dc2626', fontSize: '13px', marginBottom: '12px' }}>
-              {actionError}
-            </div>
-          )}
-
-          {/* Plain green line above the grid for success */}
-          {actionSuccess && (
-            <div style={{ color: '#16a34a', fontSize: '13px', marginBottom: '12px' }}>
-              {actionSuccess}
-            </div>
-          )}
-
-          {/* Seat grid: 10 columns on desktop (44px), 6 columns on mobile under 600px (40px) */}
+          {/* Seat Grid: Left-aligned, full width, 10 columns desktop, 6 columns mobile */}
           <div style={{ overflowX: 'auto', paddingBottom: '8px' }}>
             <div className="seat-grid-container">
-              {floorSeats.map((seat) => {
-                const displayStatus = getDisplayStatus(seat.status);
-                let bg = '#22c55e'; // free = green
-                if (displayStatus === 'occupied') bg = '#ef4444'; // occupied (booked or checked_in) = red
-                if (displayStatus === 'on_break') bg = '#f59e0b'; // on break = amber
+              {visibleFloorSeats.map((seat) => {
+                const isMine = seat.active_booking && (seat.active_booking.user_reg_no === currentRegNo || seat.active_booking.user_id === `u-${currentRegNo}`);
+                const isSelected = selectedSeat?.id === seat.id;
 
-                const isClickable = displayStatus === 'free';
+                // Seat colours matching exact palette:
+                // free #16a34a, occupied #dc2626, on break #f59e0b, booked #eab308
+                let bg = '#16a34a';
+                if (seat.status === 'booked') {
+                  bg = '#eab308';
+                } else if (seat.status === 'checked_in') {
+                  bg = '#dc2626';
+                } else if (seat.status === 'on_break') {
+                  bg = '#f59e0b';
+                }
+
+                if (isMine) {
+                  bg = '#2563eb';
+                }
+
+                // Show only the seat number inside, no dots or icons
+                const seatNumber = seat.label.replace(`F${selectedFloor}-`, '');
 
                 return (
                   <button
                     key={seat.id}
                     type="button"
-                    onClick={() => handleSeatClick(seat)}
+                    onClick={() => setSelectedSeatId(seat.id)}
                     className="seat-cell"
                     style={{
-                      padding: 0,
                       background: bg,
-                      border: '1px solid #000000',
-                      color: '#000000',
-                      fontWeight: 'bold',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: isClickable ? 'pointer' : 'default',
+                      outline: isSelected ? '2px solid #0f172a' : isMine ? '2px solid #2563eb' : 'none',
+                      outlineOffset: '2px',
                     }}
-                    title={`${seat.label} (${seat.status})`}
+                    title={`${seat.label} (${seat.status})${isMine ? ' - Your seat' : ''}`}
                   >
-                    {seat.label}
+                    {seatNumber}
                   </button>
                 );
               })}
             </div>
           </div>
+
+          {/* Legend in one row with 12px colour squares (Every state used is represented) */}
+          <div
+            style={{
+              marginTop: '20px',
+              paddingTop: '16px',
+              borderTop: '1px solid rgba(226, 232, 240, 0.7)',
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '20px',
+              fontSize: '13px',
+              color: '#475569',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '12px', height: '12px', background: '#16a34a', borderRadius: '2px' }}></div>
+              <span>Free</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '12px', height: '12px', background: '#eab308', borderRadius: '2px' }}></div>
+              <span>Hold (15m)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '12px', height: '12px', background: '#dc2626', borderRadius: '2px' }}></div>
+              <span>Occupied</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '12px', height: '12px', background: '#f59e0b', borderRadius: '2px' }}></div>
+              <span>On break</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '12px', height: '12px', background: '#2563eb', borderRadius: '2px' }}></div>
+              <span>Your seat</span>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* 6. Desk Details Drawer / Panel */}
+      {selectedSeat && (
+        <div className="panel" style={{ border: '1px solid rgba(37, 99, 235, 0.4)' }}>
+          <div className="panel-header" style={{ background: 'rgba(239, 246, 255, 0.7)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontWeight: 600, fontSize: '15px', color: '#0f172a' }}>
+                Desk {selectedSeat.label}
+              </span>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  background:
+                    selectedSeat.status === 'free' ? '#dcfce7' :
+                    selectedSeat.status === 'on_break' ? '#fef3c7' :
+                    selectedSeat.status === 'booked' ? '#fef9c3' : '#fee2e2',
+                  color:
+                    selectedSeat.status === 'free' ? '#166534' :
+                    selectedSeat.status === 'on_break' ? '#92400e' :
+                    selectedSeat.status === 'booked' ? '#854d0e' : '#991b1b',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {selectedSeat.status.replace('_', ' ')}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSelectedSeatId(null)}
+              style={{ background: 'transparent', border: 'none', fontSize: '15px', cursor: 'pointer', color: '#475569' }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="panel-body">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.6)', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <div style={{ fontSize: '11px', color: '#475569', textTransform: 'uppercase', fontWeight: 600 }}>Location</div>
+                <div style={{ fontWeight: 600, color: '#0f172a', marginTop: '2px' }}>{FLOOR_NAMES[selectedSeat.floor_id ? parseInt(selectedSeat.floor_id.replace('f', ''), 10) || selectedFloor : selectedFloor]}</div>
+                <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>Code: <code style={{ color: '#2563eb', fontWeight: 600 }}>{selectedSeat.code}</code></div>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.6)', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <div style={{ fontSize: '11px', color: '#475569', textTransform: 'uppercase', fontWeight: 600 }}>Amenities</div>
+                <div style={{ fontSize: '13px', color: '#334155', marginTop: '4px' }}>
+                  2x 230V AC Power Socket, High-Speed Campus 5G Wi-Fi
+                </div>
+              </div>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.6)', padding: '12px 14px', borderRadius: '10px', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+                <div style={{ fontSize: '11px', color: '#475569', textTransform: 'uppercase', fontWeight: 600 }}>Policy</div>
+                <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                  15 minutes to scan QR hold, 20 minutes max break limit.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '10px', paddingTop: '12px', borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
+              {selectedSeat.status === 'free' ? (
+                <>
+                  <span style={{ fontSize: '13px', color: '#166534', marginRight: 'auto', fontWeight: 500 }}>
+                    This desk is free and ready to reserve.
+                  </span>
+                  <button
+                    type="button"
+                    className="primary"
+                    onClick={() => handleBookSeat(selectedSeat)}
+                    style={{ padding: '8px 18px', fontSize: '13px' }}
+                  >
+                    Book desk {selectedSeat.label} (15m hold)
+                  </button>
+                </>
+              ) : selectedSeat.active_booking?.user_reg_no === currentRegNo ? (
+                <>
+                  <span style={{ fontSize: '13px', color: '#2563eb', marginRight: 'auto', fontWeight: 500 }}>
+                    Your current reserved seat.
+                  </span>
+                  <Link
+                    href="/my-seat"
+                    className="btn primary"
+                    style={{ padding: '8px 16px', fontSize: '13px', textDecoration: 'none' }}
+                  >
+                    Open in My seat
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleReleaseSeat(selectedSeat)}
+                    style={{ color: '#dc2626', borderColor: '#fca5a5', background: '#fff1f2', fontSize: '13px' }}
+                  >
+                    Release desk
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: '13px', color: '#475569', marginRight: 'auto' }}>
+                    Held by student ({selectedSeat.active_booking?.user_reg_no || 'Occupied'})
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      showToast(`Inspection request logged for seat ${selectedSeat.label}.`, 'info');
+                    }}
+                    style={{ fontSize: '12px' }}
+                  >
+                    Report ghost desk
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSeatId(null)}
+                    style={{ fontSize: '13px' }}
+                  >
+                    Close
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

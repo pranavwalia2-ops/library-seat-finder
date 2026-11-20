@@ -2,163 +2,425 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   BASE RESET & BACKGROUND
+   ============================================================ */
+
 * {
   box-sizing: border-box;
-  border-radius: 2px !important;
-  box-shadow: none !important;
-  text-transform: none !important;
-  letter-spacing: normal !important;
-  transition: none !important;
-  animation: none !important;
 }
 
 html, body {
   margin: 0;
   padding: 0;
-  background: #ffffff !important;
-  color: #000000 !important;
-  font-family: Arial, sans-serif !important;
+  min-height: 100vh;
+  color: #0f172a;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-size: 15px;
-  line-height: 1.4;
+  line-height: 1.5;
+
+  /* Soft diagonal fixed gradient */
+  background: linear-gradient(135deg, #e8f0ff 0%, #dbe7ff 50%, #eef2ff 100%);
+  background-attachment: fixed;
+  background-size: cover;
+  overflow-x: hidden;
 }
 
+/* Two large blurred radial blobs behind content */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(80px);
+}
+
+body::before {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(147, 180, 255, 0.35) 0%, transparent 70%);
+  top: -80px;
+  right: -80px;
+}
+
+body::after {
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(185, 183, 255, 0.35) 0%, transparent 70%);
+  bottom: -60px;
+  left: -60px;
+}
+
+main, header, nav, footer, .app-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================================
+   TYPOGRAPHY
+   ============================================================ */
+
 a {
-  color: #1d4ed8;
+  color: #2563eb;
   text-decoration: none;
+  transition: color 0.15s ease;
 }
 
 a:hover {
-  text-decoration: underline;
+  color: #1d4ed8;
 }
 
 h1 {
   font-size: 22px;
-  font-weight: bold;
+  font-weight: 600;
   margin: 0 0 4px 0;
-  color: #000000;
+  color: #0f172a;
 }
 
 h2 {
   font-size: 16px;
-  font-weight: bold;
+  font-weight: 600;
   margin: 0 0 8px 0;
-  color: #000000;
+  color: #0f172a;
 }
 
-/* Panel component */
+/* ============================================================
+   GLASS PANELS & CARDS
+   ============================================================ */
+
 .panel {
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  margin-bottom: 20px;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(30, 64, 175, 0.08);
+  margin-bottom: 24px;
+  overflow: hidden;
 }
 
 .panel-header {
-  background: #f3f4f6;
-  border-bottom: 1px solid #d1d5db;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: bold;
-  color: #000000;
+  background: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .panel-body {
-  padding: 16px;
+  padding: 20px;
 }
 
-/* Standard Buttons */
-button, .btn {
-  border: 1px solid #000000;
-  background: #ffffff;
-  color: #000000;
-  padding: 6px 12px;
-  font-family: Arial, sans-serif;
+/* Glass Header & Tab bar helper classes */
+.glass-header {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 16px rgba(30, 64, 175, 0.04);
+  width: 100%;
+}
+
+.glass-nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
   font-size: 14px;
+  font-weight: 500;
+  color: #0f172a;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.glass-nav-tab.active {
+  color: #2563eb;
+  font-weight: 600;
+  border-bottom: 3px solid #2563eb;
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+button, .btn {
+  border: 1px solid #cbd5e1;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #0f172a;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  display: inline-block;
-  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+button:hover, .btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+button:active, .btn:active {
+  transform: translateY(0);
 }
 
 button.primary, .btn-primary {
-  background: #1d4ed8 !important;
+  background: #2563eb !important;
   color: #ffffff !important;
-  border: 1px solid #1d4ed8 !important;
+  border: 1px solid #2563eb !important;
 }
+
+button.primary:hover, .btn-primary:hover {
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+button.secondary-glass, .btn-secondary-glass {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+}
+
+button.secondary-glass:hover, .btn-secondary-glass:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: #93c5fd;
+}
+
+/* ============================================================
+   INPUTS & FORMS
+   ============================================================ */
 
 input[type="text"], input[type="number"], select {
-  border: 1px solid #000000;
-  padding: 6px 10px;
-  font-family: Arial, sans-serif;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0 12px;
+  font-family: inherit;
   font-size: 14px;
-  background: #ffffff;
-  color: #000000;
+  color: #0f172a;
   outline: none;
-  border-radius: 2px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
 }
 
-/* Tables */
+input[type="text"]:focus, input[type="number"]:focus, select:focus {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+
 table {
   width: 100%;
-  border-collapse: collapse;
-}
-
-table, th, td {
-  border: 1px solid #d1d5db;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.6);
 }
 
 th, td {
-  padding: 8px 10px;
+  padding: 10px 14px;
   text-align: left;
   font-size: 14px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+}
+
+tr:last-child td {
+  border-bottom: none;
 }
 
 th {
-  background: #f3f4f6;
-  font-weight: bold;
-  color: #000000;
+  background: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+  font-size: 12px;
+  text-transform: uppercase;
 }
 
-/* Grid layout rules */
+/* ============================================================
+   SUMMARY CARDS (4 Equal Glass Cards)
+   ============================================================ */
+
 .summary-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .summary-box {
-  border: 1px solid #d1d5db;
-  padding: 10px 14px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(30, 64, 175, 0.08);
 }
+
+.summary-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.summary-number {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.summary-caption {
+  font-size: 13px;
+  color: #475569;
+}
+
+/* ============================================================
+   MAP: SEAT GRID & CELLS (Lightweight, No Lag)
+   ============================================================ */
 
 .seat-grid-container {
   display: grid;
-  grid-template-columns: repeat(10, 44px);
-  gap: 6px;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+  width: 100%;
 }
 
 .seat-cell {
-  width: 44px;
+  min-height: 44px;
   height: 44px;
-  font-size: 11px;
+  width: 100%;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease;
+  user-select: none;
 }
 
-@media (max-width: 600px) {
+.seat-cell:hover {
+  transform: translateY(-1px);
+}
+
+.seat-cell:active {
+  transform: translateY(0);
+}
+
+/* ============================================================
+   MAP: FILTER CHIPS & SEARCH
+   ============================================================ */
+
+.filter-chip {
+  height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #0f172a;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.filter-chip:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.filter-chip.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Floor pill */
+.floor-pill {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.floor-pill:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.floor-pill.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN (UNDER 700PX)
+   ============================================================ */
+
+@media (max-width: 700px) {
   .summary-strip {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
   .seat-grid-container {
-    grid-template-columns: repeat(6, 40px);
-    gap: 4px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
   }
   .seat-cell {
-    width: 40px !important;
-    height: 40px !important;
-    font-size: 10px !important;
+    min-height: 40px;
+    height: 40px;
+    font-size: 11px;
   }
-  .tab-bar-scroll {
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start !important;
   }
 }

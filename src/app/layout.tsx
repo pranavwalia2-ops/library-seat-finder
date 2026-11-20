@@ -3,8 +3,8 @@ import './globals.css';
 import Navigation from '@/components/Navigation';
 
 export const metadata: Metadata = {
-  title: 'Library Seat Finder',
-  description: 'Code Fuzion 2026 | LPU - Problem M4',
+  title: 'Library Seat Finder | Code Fuzion 2026',
+  description: 'Smart Library Seat Management with Autonomous QR Check-ins, 20-min Break Tracking, and Ghost Desk Auto-Release.',
 };
 
 export default function RootLayout({
@@ -14,19 +14,36 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ background: '#ffffff', color: '#000000', margin: 0, padding: 0 }}>
-        {/* Full width header and tab bar */}
+      <body>
         <Navigation />
 
-        {/* Content area: max-width 1000px, centered, padding 20px */}
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '20px' }}>
-          <main>
-            {children}
-          </main>
+        <div className="app-container" style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px 20px 48px' }}>
+          <main>{children}</main>
 
-          {/* Footer: small grey text with a 1px top border */}
-          <footer style={{ marginTop: '40px', paddingTop: '12px', borderTop: '1px solid #d1d5db', fontSize: '12px', color: '#6b7280' }}>
-            Library Seat Finder - problem M4
+          <footer
+            style={{
+              marginTop: '48px',
+              paddingTop: '16px',
+              borderTop: '1px solid rgba(226, 232, 240, 0.9)',
+              fontSize: '13px',
+              color: '#64748b',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '10px',
+            }}
+          >
+            <div>
+              <strong>Library Seat Finder (SeatSync)</strong> — Code Fuzion 2026 (Problem M4)
+            </div>
+            <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+              <span>15m QR Hold</span>
+              <span>•</span>
+              <span>20m Break Timeout</span>
+              <span>•</span>
+              <span>5 Floors (500 Desks)</span>
+            </div>
           </footer>
         </div>
       </body>

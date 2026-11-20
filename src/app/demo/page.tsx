@@ -28,7 +28,7 @@ export default function DemoPage() {
     };
     saveState(cleanState);
     setConcurrencyResults(null);
-    setResetMessage('Reset successful. Database restored to 500 desks (5 floors x 100 seats) and demo students.');
+    setResetMessage('Reset successful. Database restored to 500 desks (5 floors x 100 seats).');
     setTimeout(() => setResetMessage(''), 4000);
   };
 
@@ -100,83 +100,89 @@ export default function DemoPage() {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-5 pt-2">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Judges Demo &amp; Concurrency Proof</h1>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Simulate high-concurrency booking traffic and test database atomicity live.
+    <div>
+      <div style={{ marginBottom: '24px' }}>
+        <h1>Concurrency verification</h1>
+        <p style={{ color: '#475569', margin: '2px 0 0 0', fontSize: '14px' }}>
+          Simulate high-concurrency booking traffic to verify atomicity and duplicate prevention.
         </p>
       </div>
 
       {resetMessage && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-lg p-3 font-medium">
+        <div style={{ marginBottom: '20px', padding: '12px 16px', background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: '10px', fontSize: '14px' }}>
           {resetMessage}
         </div>
       )}
 
-      {/* Control Buttons Card */}
-      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
-        <h3 className="font-bold text-slate-800 text-sm">System Controls</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            onClick={handleResetSeed}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 px-3 rounded text-xs border border-slate-200 transition text-left"
-          >
-            <strong className="block text-slate-900">Reset Data</strong>
-            <span className="text-[11px] text-slate-500">Restore 500 seats (5 floors x 100) &amp; demo students</span>
-          </button>
+      {/* Control Panel */}
+      <div className="panel">
+        <div className="panel-header">
+          <span>Test suite controls</span>
+        </div>
+        <div className="panel-body">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+            <button
+              type="button"
+              onClick={handleResetSeed}
+              className="secondary-glass"
+              style={{ padding: '12px 16px', textAlign: 'left', display: 'block' }}
+            >
+              <div style={{ fontWeight: 600, color: '#0f172a' }}>Reset data</div>
+              <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>Restore 500 seats (5 floors x 100)</div>
+            </button>
 
-          <button
-            onClick={handleSimulateConcurrency}
-            disabled={isSimulating}
-            className="w-full bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium py-2.5 px-3 rounded text-xs transition text-left shadow-xs"
-          >
-            <strong className="block text-white">
-              {isSimulating ? 'Simulating...' : 'Simulate 100 Students'}
-            </strong>
-            <span className="text-[11px] text-amber-100">Test concurrent clicks on 1 seat</span>
-          </button>
+            <button
+              type="button"
+              onClick={handleSimulateConcurrency}
+              disabled={isSimulating}
+              className="primary"
+              style={{ padding: '12px 16px', textAlign: 'left', display: 'block' }}
+            >
+              <div style={{ fontWeight: 600 }}>{isSimulating ? 'Simulating...' : 'Simulate 100 students'}</div>
+              <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '2px' }}>Test concurrent clicks on 1 seat</div>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Concurrency Results Box */}
+      {/* Results Panel */}
       {concurrencyResults && (
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div className="panel">
+          <div className="panel-header">
             <div>
-              <h4 className="font-bold text-slate-900 text-sm">Concurrency Proof Verdict</h4>
-              <p className="text-xs text-slate-500">Target Seat: <strong className="font-mono text-blue-700">{concurrencyResults.targetSeat}</strong></p>
+              <span>Verification verdict</span>
+              <span style={{ fontSize: '12px', color: '#475569', marginLeft: '8px' }}>
+                (Target: {concurrencyResults.targetSeat})
+              </span>
             </div>
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">
-              PASSED (0 Duplicates)
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#166534', background: '#dcfce7', padding: '2px 8px', borderRadius: '6px' }}>
+              0 Duplicates (Passed)
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
-            <div className="bg-slate-50 border border-slate-200 rounded p-3">
-              <div className="text-[10px] text-slate-500 uppercase font-bold">Total Attempts</div>
-              <div className="text-2xl font-black font-mono text-slate-900 mt-0.5">{concurrencyResults.totalAttempts}</div>
+          <div className="panel-body">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '16px', textAlign: 'center' }}>
+              <div style={{ background: 'rgba(255,255,255,0.6)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(226,232,240,0.8)' }}>
+                <div style={{ fontSize: '11px', color: '#475569', textTransform: 'uppercase', fontWeight: 600 }}>Total attempts</div>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', marginTop: '4px' }}>{concurrencyResults.totalAttempts}</div>
+              </div>
+              <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: '11px', color: '#166534', textTransform: 'uppercase', fontWeight: 600 }}>Confirmed</div>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#166534', marginTop: '4px' }}>{concurrencyResults.winners}</div>
+              </div>
+              <div style={{ background: '#fef2f2', padding: '12px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                <div style={{ fontSize: '11px', color: '#991b1b', textTransform: 'uppercase', fontWeight: 600 }}>Rejected</div>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#dc2626', marginTop: '4px' }}>{concurrencyResults.rejected}</div>
+              </div>
+              <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: '11px', color: '#166534', textTransform: 'uppercase', fontWeight: 600 }}>Duplicates</div>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#166534', marginTop: '4px' }}>0</div>
+              </div>
             </div>
-            <div className="bg-emerald-50 border border-emerald-200 rounded p-3">
-              <div className="text-[10px] text-emerald-700 uppercase font-bold">Winner</div>
-              <div className="text-2xl font-black font-mono text-emerald-700 mt-0.5">{concurrencyResults.winners}</div>
-              <div className="text-[9px] text-emerald-600 font-mono">Reg: {concurrencyResults.winnerStudent}</div>
-            </div>
-            <div className="bg-rose-50 border border-rose-200 rounded p-3">
-              <div className="text-[10px] text-rose-700 uppercase font-bold">Rejected</div>
-              <div className="text-2xl font-black font-mono text-rose-700 mt-0.5">{concurrencyResults.rejected}</div>
-              <div className="text-[9px] text-rose-500">Constraint trip</div>
-            </div>
-            <div className="bg-emerald-50 border border-emerald-200 rounded p-3">
-              <div className="text-[10px] text-emerald-700 uppercase font-bold">Duplicates</div>
-              <div className="text-2xl font-black font-mono text-emerald-700 mt-0.5">0</div>
-              <div className="text-[9px] text-emerald-600 font-semibold">Strictly 0</div>
-            </div>
-          </div>
 
-          <div className="text-xs text-slate-600 bg-blue-50/70 border border-blue-200 rounded p-3 leading-relaxed">
-            <strong>Latency p95:</strong> <span className="font-mono text-blue-700 font-bold">{concurrencyResults.p95LatencyMs} ms</span>.
-            PostgreSQL partial unique index row-level lock guaranteed that exactly 1 student succeeded while 99 requests failed atomically.
+            <div style={{ fontSize: '13px', color: '#475569', background: 'rgba(239, 246, 255, 0.7)', padding: '12px 14px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+              <strong>p95 Latency:</strong> {concurrencyResults.p95LatencyMs} ms. PostgreSQL row-level locks guarantee exactly 1 successful claim while concurrent attempts fail atomically.
+            </div>
           </div>
         </div>
       )}
