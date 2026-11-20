@@ -32,6 +32,16 @@ export interface ActiveBooking {
   checked_in_at?: string | null;
   break_started_at?: string | null;
   expires_at?: string | null;
+  leftLibraryAt?: number | null;
+  belongingsCollectedAt?: number | null;
+  releaseReason?: string | null;
+}
+
+export interface GateLog {
+  id: string;
+  regNo: string;
+  direction: 'in' | 'out';
+  at: number;
 }
 
 export interface User {

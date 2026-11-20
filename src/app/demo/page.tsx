@@ -23,6 +23,7 @@ export default function DemoPage() {
       floors,
       seats,
       bookings: [],
+      gateLogs: [],
       hoggedMetrics: getInitialHoggedMetrics(),
       peakHours: getInitialPeakHours(),
     };

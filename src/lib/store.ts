@@ -1,8 +1,8 @@
 'use client';
 
-import { Floor, Seat, User, ActiveBooking, HoggedSeatMetric, PeakHourMetric } from './types';
+import { Floor, Seat, User, ActiveBooking, GateLog, HoggedSeatMetric, PeakHourMetric } from './types';
 
-export type { Floor, Seat, User, ActiveBooking, HoggedSeatMetric, PeakHourMetric };
+export type { Floor, Seat, User, ActiveBooking, GateLog, HoggedSeatMetric, PeakHourMetric };
 
 // ============================================================================
 // SeatSync Reactive Local Storage & Supabase Store
@@ -10,11 +10,15 @@ export type { Floor, Seat, User, ActiveBooking, HoggedSeatMetric, PeakHourMetric
 
 const STORAGE_KEY = 'seatsync_state_v5';
 
+// Gate exit window in minutes — set to 1 for demo, 20 for production
+const GATE_EXIT_MINUTES = 20;
+
 export interface AppState {
   currentUser: User;
   floors: Floor[];
   seats: Seat[];
   bookings: ActiveBooking[];
+  gateLogs: GateLog[];
   hoggedMetrics: HoggedSeatMetric[];
   peakHours: PeakHourMetric[];
 }
@@ -143,6 +147,7 @@ export function loadStoredState(): AppState {
       floors,
       seats,
       bookings: [],
+      gateLogs: [],
       hoggedMetrics: getInitialHoggedMetrics(),
       peakHours: getInitialPeakHours(),
     };
@@ -159,6 +164,8 @@ export function loadStoredState(): AppState {
         Array.isArray(parsed.floors) &&
         parsed.floors.length === 5
       ) {
+        // Migrate older states that lack gateLogs
+        if (!Array.isArray(parsed.gateLogs)) parsed.gateLogs = [];
         return parsed;
       }
     } catch {}
@@ -170,6 +177,7 @@ export function loadStoredState(): AppState {
     floors,
     seats,
     bookings: [],
+    gateLogs: [],
     hoggedMetrics: getInitialHoggedMetrics(),
     peakHours: getInitialPeakHours(),
   };
@@ -339,6 +347,12 @@ export function triggerAutoReleaseEngine(): { releasedCount: number; message: st
     if (seat.active_booking && seat.active_booking.expires_at) {
       const exp = new Date(seat.active_booking.expires_at).getTime();
       if (exp <= now) {
+        const reason = seat.active_booking.leftLibraryAt ? 'left_library' : 'timeout';
+        seat.active_booking.releaseReason = reason;
+        // Keep a snapshot so security page can show "collect belongings"
+        // We store it in the bookings log before wiping active_booking
+        state.bookings = state.bookings || [];
+        state.bookings.push({ ...seat.active_booking, releaseReason: reason });
         seat.status = 'free';
         seat.active_booking = null;
         count++;
@@ -351,6 +365,11 @@ export function triggerAutoReleaseEngine(): { releasedCount: number; message: st
     const breakOrBooked = state.seats.filter((s) => s.status === 'on_break' || s.status === 'booked');
     const toFree = breakOrBooked.slice(0, 3);
     toFree.forEach((seat) => {
+      if (seat.active_booking) {
+        seat.active_booking.releaseReason = 'timeout';
+        state.bookings = state.bookings || [];
+        state.bookings.push({ ...seat.active_booking, releaseReason: 'timeout' });
+      }
       seat.status = 'free';
       seat.active_booking = null;
       count++;
@@ -397,9 +416,72 @@ export function resetLibraryAction(): { message: string } {
     floors,
     seats,
     bookings: [],
+    gateLogs: [],
     hoggedMetrics: getInitialHoggedMetrics(),
     peakHours: getInitialPeakHours(),
   };
   saveState(clean);
   return { message: 'Library restored to fresh 500-desk state!' };
+}
+
+// ----------------------------------------------------------------------------
+// Gate Scan — called by turnstile hardware (simulated via gate page)
+// ----------------------------------------------------------------------------
+export function gateScan(regNo: string, direction: 'in' | 'out'): string {
+  const state = loadStoredState();
+  const now = Date.now();
+
+  // Record the log
+  const log: GateLog = {
+    id: `gl-${now}-${Math.random().toString(36).slice(2, 7)}`,
+    regNo,
+    direction,
+    at: now,
+  };
+  state.gateLogs = state.gateLogs || [];
+  state.gateLogs.unshift(log); // newest first
+  if (state.gateLogs.length > 200) state.gateLogs = state.gateLogs.slice(0, 200);
+
+  // Find the student's active seat
+  const seat = state.seats.find(
+    (s) => s.active_booking && (s.active_booking.user_reg_no === regNo || s.active_booking.user_id === `u-${regNo}`)
+  );
+
+  if (direction === 'out') {
+    if (seat && seat.active_booking && seat.active_booking.status === 'checked_in') {
+      // Student left without releasing — start the gate-exit countdown
+      seat.active_booking.leftLibraryAt = now;
+      seat.active_booking.expires_at = new Date(now + GATE_EXIT_MINUTES * 60 * 1000).toISOString();
+      saveState(state);
+      return `Exit recorded for ${regNo}. Seat ${seat.label} held for ${GATE_EXIT_MINUTES} min — return to keep it.`;
+    }
+    saveState(state);
+    return seat
+      ? `Exit recorded for ${regNo}. Seat ${seat.label} status: ${seat.active_booking?.status ?? 'unknown'}.`
+      : `Exit recorded for ${regNo}. No active desk reservation found.`;
+  }
+
+  // direction === 'in'
+  if (seat && seat.active_booking && seat.active_booking.leftLibraryAt) {
+    // Student returned — clear the exit timer, keep the seat
+    seat.active_booking.leftLibraryAt = null;
+    seat.active_booking.expires_at = null;
+    saveState(state);
+    return `Welcome back ${regNo}! Seat ${seat.label} timer cleared — you're checked in.`;
+  }
+
+  saveState(state);
+  return seat
+    ? `Entry recorded for ${regNo}. Seat ${seat.label} is active.`
+    : `Entry recorded for ${regNo}. No active desk found — head to the map to book one.`;
+}
+
+// Mark belongings as collected for a released left_library booking
+export function markBelongingsCollected(bookingId: string): void {
+  const state = loadStoredState();
+  const b = state.bookings.find((b) => b.id === bookingId);
+  if (b) {
+    b.belongingsCollectedAt = Date.now();
+    saveState(state);
+  }
 }

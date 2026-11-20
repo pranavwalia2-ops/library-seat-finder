@@ -11,6 +11,7 @@ import {
   releaseSeatAction,
   Seat,
   AppState,
+  ActiveBooking,
 } from '@/lib/store';
 import { getRegistrationNumber } from '@/lib/user';
 
@@ -25,6 +26,7 @@ const FLOOR_NAMES: Record<number, string> = {
 export default function MySeatPage() {
   const [currentRegNo, setCurrentRegNo] = useState<string>('12200001');
   const [mySeat, setMySeat] = useState<Seat | null>(null);
+  const [leftLibraryRelease, setLeftLibraryRelease] = useState<ActiveBooking | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [percentLeft, setPercentLeft] = useState<number>(100);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -38,6 +40,16 @@ export default function MySeatPage() {
         (s) => s.active_booking && (s.active_booking.user_reg_no === reg || s.active_booking.user_id === `u-${reg}`)
       );
       setMySeat(found || null);
+      // Check if the user's last released booking was due to leaving library
+      const lastReleased = (state.bookings || [])
+        .filter(
+          (b) =>
+            b.releaseReason === 'left_library' &&
+            (b.user_reg_no === reg || b.user_id === `u-${reg}`) &&
+            !b.belongingsCollectedAt
+        )
+        .sort((a, b) => (b.id > a.id ? 1 : -1))[0];
+      setLeftLibraryRelease(lastReleased || null);
     } catch {}
   }, []);
 
@@ -157,6 +169,13 @@ export default function MySeatPage() {
 
   const floorNumber = mySeat ? parseInt(mySeat.label.replace('F', '').split('-')[0], 10) || 1 : 1;
 
+  // Gate exit return deadline string
+  const gateExpiresAt = mySeat?.active_booking?.expires_at;
+  const leftLibraryAt = mySeat?.active_booking?.leftLibraryAt;
+  const returnDeadline = gateExpiresAt && leftLibraryAt
+    ? new Date(gateExpiresAt).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false })
+    : null;
+
   return (
     <div>
       {/* 1. Header */}
@@ -204,6 +223,11 @@ export default function MySeatPage() {
       {/* 3. Content */}
       {!mySeat ? (
         <div className="panel" style={{ padding: '36px 20px', textAlign: 'center' }}>
+          {leftLibraryRelease && (
+            <div style={{ marginBottom: '20px', padding: '12px 16px', borderRadius: '10px', background: '#fef2f2', border: '1px solid #fecdd3', color: '#991b1b', fontSize: '14px', fontWeight: 500, textAlign: 'left' }}>
+              Your seat was released because you left the library without returning in time.
+            </div>
+          )}
           <h2 style={{ fontSize: '18px', color: '#0f172a', marginBottom: '6px' }}>No active reservation</h2>
           <p style={{ color: '#475569', maxWidth: '420px', margin: '0 auto 20px auto', fontSize: '14px' }}>
             You do not currently hold a library desk. Select an available seat from the floor map.
@@ -253,6 +277,12 @@ export default function MySeatPage() {
             </div>
 
             <div className="panel-body">
+              {/* Gate exit warning */}
+              {leftLibraryAt && returnDeadline && (
+                <div style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: '#fef3c7', border: '1px solid #fde68a', color: '#92400e', fontSize: '14px', fontWeight: 500 }}>
+                  ⚠ You left the library. Return before <strong>{returnDeadline}</strong> or your seat will be released.
+                </div>
+              )}
               {/* Timer Progress Container */}
               <div
                 style={{
