@@ -96,7 +96,7 @@ BEGIN
     VALUES (temp_seat_id, temp_user_id, 'checked_in', NOW() - INTERVAL '45 minutes', NOW() - INTERVAL '40 minutes')
     RETURNING id INTO temp_booking_id;
     
-    INSERT INTO booking_events (booking_id, seat_id, user_id, event, created_at)
+    INSERT INTO events (booking_id, seat_id, user_id, event, created_at)
     VALUES 
         (temp_booking_id, temp_seat_id, temp_user_id, 'booked', NOW() - INTERVAL '45 minutes'),
         (temp_booking_id, temp_seat_id, temp_user_id, 'checked_in', NOW() - INTERVAL '40 minutes');
@@ -108,7 +108,7 @@ BEGIN
     VALUES (temp_seat_id, temp_user_id, 'booked', NOW() - INTERVAL '5 minutes', NOW() + INTERVAL '10 minutes')
     RETURNING id INTO temp_booking_id;
 
-    INSERT INTO booking_events (booking_id, seat_id, user_id, event, created_at)
+    INSERT INTO events (booking_id, seat_id, user_id, event, created_at)
     VALUES (temp_booking_id, temp_seat_id, temp_user_id, 'booked', NOW() - INTERVAL '5 minutes');
 
     -- Floor 1 Seat 3: On Break (14 min left on 20 min timer)
@@ -118,7 +118,7 @@ BEGIN
     VALUES (temp_seat_id, temp_user_id, 'on_break', NOW() - INTERVAL '60 minutes', NOW() - INTERVAL '55 minutes', NOW() - INTERVAL '6 minutes', NOW() + INTERVAL '14 minutes')
     RETURNING id INTO temp_booking_id;
 
-    INSERT INTO booking_events (booking_id, seat_id, user_id, event, created_at)
+    INSERT INTO events (booking_id, seat_id, user_id, event, created_at)
     VALUES 
         (temp_booking_id, temp_seat_id, temp_user_id, 'booked', NOW() - INTERVAL '60 minutes'),
         (temp_booking_id, temp_seat_id, temp_user_id, 'checked_in', NOW() - INTERVAL '55 minutes'),
@@ -153,7 +153,7 @@ BEGIN
         )
         RETURNING id INTO temp_booking_id;
 
-        INSERT INTO booking_events (booking_id, seat_id, user_id, event, created_at)
+        INSERT INTO events (booking_id, seat_id, user_id, event, created_at)
         VALUES 
             (temp_booking_id, temp_seat_id, student_ids[s_idx], 'booked', NOW() - ((s_idx * 6) || ' hours')::INTERVAL),
             (temp_booking_id, temp_seat_id, student_ids[s_idx], 'break_started', NOW() - ((s_idx * 6) - 2 || ' hours')::INTERVAL),

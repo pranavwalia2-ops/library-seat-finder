@@ -9,6 +9,8 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Clean slate if recreating
+DROP VIEW IF EXISTS booking_events CASCADE;
+DROP TABLE IF EXISTS events CASCADE;
 DROP TABLE IF EXISTS booking_events CASCADE;
 DROP TABLE IF EXISTS bookings CASCADE;
 DROP TABLE IF EXISTS seats CASCADE;
@@ -99,12 +101,12 @@ CREATE INDEX idx_bookings_user_status ON bookings(user_id, status);
 CREATE INDEX idx_bookings_expires_at ON bookings(expires_at) WHERE status IN ('booked', 'on_break');
 
 -- ----------------------------------------------------------------------------
--- 5. BOOKING EVENTS TABLE
+-- 5. EVENTS TABLE
 -- Immutable event ledger for auditing, live tracking, and admin hogging analytics.
 -- ----------------------------------------------------------------------------
-CREATE TABLE booking_events (
+CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+    booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE,
     seat_id UUID NOT NULL REFERENCES seats(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     event VARCHAR(50) NOT NULL,          -- 'booked', 'checked_in', 'break_started', 'break_returned', 'released'
@@ -112,8 +114,11 @@ CREATE TABLE booking_events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_booking_events_seat ON booking_events(seat_id, created_at);
-CREATE INDEX idx_booking_events_created ON booking_events(created_at);
+CREATE INDEX idx_events_seat ON events(seat_id, created_at);
+CREATE INDEX idx_events_created ON events(created_at);
+
+-- Alias view for backward compatibility
+CREATE OR REPLACE VIEW booking_events AS SELECT * FROM events;
 
 -- ----------------------------------------------------------------------------
 -- 6. REALTIME REPLICATION ENABLEMENT
