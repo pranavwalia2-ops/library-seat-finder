@@ -198,26 +198,6 @@ export default function Navigation() {
             >
               <span style={{ color: '#475569', fontSize: '12px' }}>Student ID:</span>
               <span style={{ fontWeight: 600, color: '#0f172a' }}>{regNo}</span>
-              <span style={{ color: '#cbd5e1' }}>|</span>
-              <select
-                value={regNo}
-                onChange={(e) => handleSwitchUser(e.target.value)}
-                style={{
-                  background: 'transparent',
-                  color: '#2563eb',
-                  border: 'none',
-                  height: '24px',
-                  padding: '0 4px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                <option value="12200001">12200001 (Student)</option>
-                <option value="12200002">12200002 (Student)</option>
-                <option value="12200003">12200003 (Student)</option>
-                <option value="12200000">12200000 (Admin)</option>
-              </select>
             </div>
 
             <Link
