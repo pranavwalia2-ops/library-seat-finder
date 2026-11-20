@@ -1,60 +1,206 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import { getRegistrationNumber } from '@/lib/user';
 
-// TODO: replace static mock data with get_seat_map RPC
-export default function MapPage() {
-  const [selectedFloor, setSelectedFloor] = useState<number>(1);
-  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+interface RawSeat {
+  id?: string;
+  seat_id?: string;
+  label?: string;
+  seat_label?: string;
+  code?: string;
+  seat_code?: string;
+  status?: string;
+  seat_status?: string;
+  floor?: number;
+  level?: number;
+  floor_level?: number;
+  floor_id?: string;
+}
 
-  // TODO: replace static mock data with get_seat_map RPC
-  // Deterministic mock seat generator for 100 seats per floor (labels F1-001 … F5-100)
-  const getMockSeats = (floor: number) => {
-    const seats = [];
-    // Target percentages per floor (occupied, onBreak)
-    const floorConfig: Record<number, { occupied: number; onBreak: number }> = {
-      1: { occupied: 0.15, onBreak: 0.05 },
-      2: { occupied: 0.40, onBreak: 0.08 },
-      3: { occupied: 0.65, onBreak: 0.10 },
-      4: { occupied: 0.85, onBreak: 0.08 },
-      5: { occupied: 0.30, onBreak: 0.15 },
-    };
-    const { occupied, onBreak } = floorConfig[floor] || { occupied: 0.2, onBreak: 0.05 };
-    const occupiedThresh = occupied;
-    const onBreakThresh = occupied + onBreak;
+interface SeatItem {
+  id: string;
+  label: string;
+  code: string;
+  status: string; // raw status: free, booked, checked_in, on_break, occupied
+  floor: number;
+}
+
+function parseFloor(seat: RawSeat): number {
+  if (typeof seat.floor === 'number') return seat.floor;
+  if (typeof seat.level === 'number') return seat.level;
+  if (typeof seat.floor_level === 'number') return seat.floor_level;
+  const label = seat.label || seat.seat_label || '';
+  const match = label.match(/^F(\d+)-/i);
+  if (match) return parseInt(match[1], 10);
+  if (typeof seat.floor_id === 'string') {
+    const fMatch = seat.floor_id.match(/^f?(\d+)/i);
+    if (fMatch) return parseInt(fMatch[1], 10);
+  }
+  return 1;
+}
+
+function getDisplayStatus(rawStatus: string | undefined): 'free' | 'occupied' | 'on_break' {
+  if (!rawStatus) return 'free';
+  const s = rawStatus.toLowerCase();
+  if (s === 'on_break') return 'on_break';
+  if (s === 'booked' || s === 'checked_in' || s === 'occupied') return 'occupied';
+  return 'free';
+}
+
+// Fallback initial seats (5 floors x 100 seats) so map renders instantly while RPC connects
+function getInitialSeats(): SeatItem[] {
+  const floorConfig: Record<number, { occupied: number; onBreak: number }> = {
+    1: { occupied: 15, onBreak: 5 },
+    2: { occupied: 40, onBreak: 8 },
+    3: { occupied: 65, onBreak: 10 },
+    4: { occupied: 85, onBreak: 8 },
+    5: { occupied: 30, onBreak: 15 },
+  };
+
+  const list: SeatItem[] = [];
+  for (let floor = 1; floor <= 5; floor++) {
+    const { occupied, onBreak } = floorConfig[floor] || { occupied: 20, onBreak: 5 };
     for (let i = 1; i <= 100; i++) {
       const pad = String(i).padStart(3, '0');
       const label = `F${floor}-${pad}`;
-      // Simple deterministic pseudo‑random based on floor and seat number
-      const hash = (floor * 1000 + i) * 31 % 1000; // 0‑999
-      const rand = hash / 1000; // 0‑0.999
-      let status: 'free' | 'occupied' | 'on_break' = 'free';
-      if (rand < occupiedThresh) {
-        status = 'occupied';
-      } else if (rand < onBreakThresh) {
-        status = 'on_break';
-      }
-      seats.push({ id: `s-${floor}-${i}`, label, status });
+      const code = `LPU-F${floor}-${pad}`;
+      const id = `s-${floor}-${i}`;
+      const seed = floor * 2106 + i * 6723;
+      const hash = Math.abs((Math.imul(seed ^ (seed >>> 15), 0x45d9f3b) ^ (seed >>> 7)) % 100);
+
+      let status = 'free';
+      if (hash < occupied) status = 'occupied';
+      else if (hash < occupied + onBreak) status = 'on_break';
+
+      list.push({ id, label, code, status, floor });
     }
-    return seats;
-  };
-
-  const currentSeats = getMockSeats(selectedFloor);
-  const floorSeatsTotal = 100;
-  const floorOccupied = currentSeats.filter((s) => s.status === 'occupied').length;
-  const floorOnBreak = currentSeats.filter((s) => s.status === 'on_break').length;
-  const floorFree = floorSeatsTotal - (floorOccupied + floorOnBreak);
-
-  // Library-wide summary totals across all 5 floors (500 seats)
-  const totalLibrarySeats = 500;
-  let totalLibraryOccupied = 0;
-  let totalLibraryOnBreak = 0;
-  for (let fl = 1; fl <= 5; fl++) {
-    const seats = getMockSeats(fl);
-    totalLibraryOccupied += seats.filter((s) => s.status === 'occupied').length;
-    totalLibraryOnBreak += seats.filter((s) => s.status === 'on_break').length;
   }
-  const totalLibraryFree = totalLibrarySeats - (totalLibraryOccupied + totalLibraryOnBreak);
+  return list;
+}
+
+export default function MapPage() {
+  const [selectedFloor, setSelectedFloor] = useState<number>(1);
+  const [seats, setSeats] = useState<SeatItem[]>(getInitialSeats);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  const isMountedRef = useRef(true);
+
+  const fetchSeats = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_seat_map');
+      if (!isMountedRef.current) return;
+
+      if (error || !data) {
+        setLoadError('Could not load seats. Retrying.');
+        return;
+      }
+
+      const list: RawSeat[] = Array.isArray(data) ? data : [];
+      if (list.length > 0) {
+        const parsed: SeatItem[] = list.map((item, index) => {
+          const id = item.id || item.seat_id || `seat-${index}`;
+          const label = item.label || item.seat_label || `Seat-${index + 1}`;
+          const code = item.code || item.seat_code || label;
+          const status = item.status || item.seat_status || 'free';
+          const floor = parseFloor(item);
+          return { id, label, code, status, floor };
+        });
+
+        setSeats(parsed);
+        setLoadError(null);
+      } else {
+        setLoadError('Could not load seats. Retrying.');
+      }
+    } catch {
+      if (isMountedRef.current) {
+        setLoadError('Could not load seats. Retrying.');
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    fetchSeats();
+
+    // Subscribe to Realtime changes on the bookings table
+    const channel = supabase
+      .channel('realtime-map-bookings')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'bookings' },
+        () => {
+          fetchSeats();
+        }
+      )
+      .subscribe();
+
+    // Re-fetch every 3 seconds with setInterval
+    const intervalId = setInterval(fetchSeats, 3000);
+
+    return () => {
+      isMountedRef.current = false;
+      supabase.removeChannel(channel);
+      clearInterval(intervalId);
+    };
+  }, [fetchSeats]);
+
+  async function handleSeatClick(seat: SeatItem) {
+    const displayStatus = getDisplayStatus(seat.status);
+    // Red or amber seats do nothing on click
+    if (displayStatus !== 'free') {
+      return;
+    }
+
+    const confirmed = window.confirm(`Book seat ${seat.label}?`);
+    if (!confirmed) return;
+
+    setActionError(null);
+    setActionSuccess(null);
+    const regNo = getRegistrationNumber();
+
+    try {
+      // Use exact SQL function arguments (p_seat_id, p_reg_no)
+      let { error } = await supabase.rpc('book_seat', {
+        p_seat_id: seat.id,
+        p_reg_no: regNo,
+      });
+
+      // Fallback if parameter names in SQL function differ
+      if (error && error.message && error.message.includes('function') && error.message.includes('not found')) {
+        const fallback = await supabase.rpc('book_seat', {
+          seat_id: seat.id,
+          reg_no: regNo,
+        });
+        error = fallback.error;
+      }
+
+      if (error) {
+        setActionError(error.message || 'Seat taken or student already holds a booking.');
+        return;
+      }
+
+      setActionSuccess(`Seat ${seat.label} booked. Check in within 10 minutes.`);
+      fetchSeats();
+    } catch (err: any) {
+      setActionError(err?.message || 'Seat taken or student already holds a booking.');
+    }
+  }
+
+  // Summary strip totals calculated across all loaded seats
+  const totalLibrarySeats = seats.length;
+  const totalLibraryFree = seats.filter((s) => getDisplayStatus(s.status) === 'free').length;
+  const totalLibraryOccupied = seats.filter((s) => getDisplayStatus(s.status) === 'occupied').length;
+  const totalLibraryOnBreak = seats.filter((s) => getDisplayStatus(s.status) === 'on_break').length;
+
+  // Floor-specific seats and metrics
+  const floorSeats = seats.filter((s) => s.floor === selectedFloor);
+  const floorFree = floorSeats.filter((s) => getDisplayStatus(s.status) === 'free').length;
+  const floorOccupied = floorSeats.filter((s) => getDisplayStatus(s.status) === 'occupied').length;
+  const floorOnBreak = floorSeats.filter((s) => getDisplayStatus(s.status) === 'on_break').length;
 
   return (
     <div>
@@ -63,7 +209,7 @@ export default function MapPage() {
         Find a free seat and book it. The map refreshes every few seconds.
       </p>
 
-      {/* Summary strip: Total seats = 500, Free, Occupied, On break */}
+      {/* Summary strip: Total seats, Free, Occupied, On break */}
       <div className="summary-strip">
         <div className="summary-box">
           <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000' }}>{totalLibrarySeats}</div>
@@ -85,7 +231,9 @@ export default function MapPage() {
 
       {/* Floor selector & Legend */}
       <div className="panel">
-        <div className="panel-header">Floor selection and layout (Floor {selectedFloor} - 100 seats)</div>
+        <div className="panel-header">
+          Floor selection and layout (Floor {selectedFloor} - {floorSeats.length} seats)
+        </div>
         <div className="panel-body">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
             {/* Floor selector: 5 buttons (Floor 1 to Floor 5) */}
@@ -96,7 +244,8 @@ export default function MapPage() {
                   type="button"
                   onClick={() => {
                     setSelectedFloor(fl);
-                    setSelectedSeat(null);
+                    setActionError(null);
+                    setActionSuccess(null);
                   }}
                   className={selectedFloor === fl ? 'primary' : ''}
                 >
@@ -105,7 +254,7 @@ export default function MapPage() {
               ))}
             </div>
 
-            {/* Legend: small squares */}
+            {/* Legend: small squares with dynamic counts */}
             <div style={{ display: 'flex', gap: '16px', fontSize: '13px', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '14px', height: '14px', background: '#22c55e', border: '1px solid #000000' }}></div>
@@ -122,32 +271,53 @@ export default function MapPage() {
             </div>
           </div>
 
+          {/* Plain red line above the grid for errors */}
+          {loadError && (
+            <div style={{ color: '#dc2626', fontSize: '13px', marginBottom: '12px' }}>
+              {loadError}
+            </div>
+          )}
+
+          {actionError && (
+            <div style={{ color: '#dc2626', fontSize: '13px', marginBottom: '12px' }}>
+              {actionError}
+            </div>
+          )}
+
+          {/* Plain green line above the grid for success */}
+          {actionSuccess && (
+            <div style={{ color: '#16a34a', fontSize: '13px', marginBottom: '12px' }}>
+              {actionSuccess}
+            </div>
+          )}
+
           {/* Seat grid: 10 columns on desktop (44px), 6 columns on mobile under 600px (40px) */}
           <div style={{ overflowX: 'auto', paddingBottom: '8px' }}>
             <div className="seat-grid-container">
-              {currentSeats.map((seat) => {
-                let bg = '#22c55e'; // Green: Free
-                if (seat.status === 'occupied') bg = '#ef4444'; // Red: Occupied
-                if (seat.status === 'on_break') bg = '#f59e0b'; // Amber: On break
+              {floorSeats.map((seat) => {
+                const displayStatus = getDisplayStatus(seat.status);
+                let bg = '#22c55e'; // free = green
+                if (displayStatus === 'occupied') bg = '#ef4444'; // occupied (booked or checked_in) = red
+                if (displayStatus === 'on_break') bg = '#f59e0b'; // on break = amber
 
-                const isSelected = selectedSeat === seat.label;
+                const isClickable = displayStatus === 'free';
 
                 return (
                   <button
                     key={seat.id}
                     type="button"
-                    onClick={() => setSelectedSeat(seat.label)}
+                    onClick={() => handleSeatClick(seat)}
                     className="seat-cell"
                     style={{
                       padding: 0,
                       background: bg,
-                      border: isSelected ? '2px solid #1d4ed8' : '1px solid #000000',
+                      border: '1px solid #000000',
                       color: '#000000',
                       fontWeight: 'bold',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      cursor: seat.status === 'free' ? 'pointer' : 'default',
+                      cursor: isClickable ? 'pointer' : 'default',
                     }}
                     title={`${seat.label} (${seat.status})`}
                   >
@@ -157,20 +327,6 @@ export default function MapPage() {
               })}
             </div>
           </div>
-
-          {selectedSeat && (
-            <div style={{ marginTop: '16px', borderTop: '1px solid #d1d5db', paddingTop: '12px', fontSize: '14px' }}>
-              Selected seat: <strong>{selectedSeat}</strong>.{' '}
-              <button
-                type="button"
-                className="primary"
-                onClick={() => alert(`Seat ${selectedSeat} booked (15m hold).`)}
-                style={{ marginLeft: '8px' }}
-              >
-                Book seat
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>
