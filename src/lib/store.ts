@@ -17,22 +17,24 @@ export interface AppState {
   peakHours: PeakHourMetric[];
 }
 
-// Generate the canonical 3 floors x 40 seats
+// Generate the canonical 5 floors x 100 seats (500 seats total)
 export function generateInitialSeats(): { floors: Floor[]; seats: Seat[] } {
   const floors: Floor[] = [
     { id: 'f1', name: 'Ground Floor - Quiet Study Zone', level: 1 },
     { id: 'f2', name: 'First Floor - Collaborative Commons', level: 2 },
     { id: 'f3', name: 'Second Floor - Silent Research Wing', level: 3 },
+    { id: 'f4', name: 'Third Floor - Periodicals & Journals', level: 4 },
+    { id: 'f5', name: 'Fourth Floor - Digital Lab & Media', level: 5 },
   ];
 
   const seats: Seat[] = [];
-  const prefixes = ['F1', 'F2', 'F3'];
+  const prefixes = ['F1', 'F2', 'F3', 'F4', 'F5'];
 
   floors.forEach((fl, fIdx) => {
     const prefix = prefixes[fIdx];
-    for (let i = 1; i <= 40; i++) {
-      const col = ((i - 1) % 8) + 1;
-      const row = Math.floor((i - 1) / 8) + 1;
+    for (let i = 1; i <= 100; i++) {
+      const col = ((i - 1) % 10) + 1;
+      const row = Math.floor((i - 1) / 10) + 1;
       const label = `${prefix}-S${String(i).padStart(2, '0')}`;
       const code = `LPU-${prefix}-${String(i).padStart(3, '0')}`;
 

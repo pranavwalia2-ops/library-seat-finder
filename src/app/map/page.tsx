@@ -7,18 +7,21 @@ export default function MapPage() {
   const [selectedFloor, setSelectedFloor] = useState<number>(1);
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
 
-  // Static mock seat generator for 40 seats (10 cols x 4 rows)
+  // Static mock seat generator for 100 seats per floor (10 cols x 10 rows)
   const getMockSeats = (floor: number) => {
     const seats = [];
-    for (let i = 1; i <= 40; i++) {
+    for (let i = 1; i <= 100; i++) {
       const pad = String(i).padStart(2, '0');
       const label = `F${floor}-${pad}`;
       
-      // Deterministic mock statuses
+      // Deterministic mock statuses for realistic demo distribution
       let status: 'free' | 'occupied' | 'on_break' = 'free';
-      if (i === 3 || i === 7 || i === 12 || i === 18 || i === 25 || i === 31) {
+      if (
+        i === 3 || i === 7 || i === 12 || i === 18 || i === 25 || i === 31 ||
+        i === 44 || i === 52 || i === 63 || i === 71 || i === 85 || i === 94
+      ) {
         status = 'occupied';
-      } else if (i === 5 || i === 15 || i === 22) {
+      } else if (i === 5 || i === 15 || i === 22 || i === 48 || i === 67 || i === 82) {
         status = 'on_break';
       }
 
@@ -28,7 +31,7 @@ export default function MapPage() {
   };
 
   const currentSeats = getMockSeats(selectedFloor);
-  const total = 40;
+  const total = 100;
   const occupied = currentSeats.filter((s) => s.status === 'occupied').length;
   const onBreak = currentSeats.filter((s) => s.status === 'on_break').length;
   const free = total - (occupied + onBreak);
@@ -37,14 +40,14 @@ export default function MapPage() {
     <div>
       <h1>Map</h1>
       <p style={{ color: '#6b7280', margin: '0 0 16px 0', fontSize: '14px' }}>
-        Find a free seat and book it. The map refreshes every few seconds.
+        Find a free seat and book it. The map refreshes every few seconds. (5 floors, 100 seats per floor)
       </p>
 
       {/* Summary strip of 4 boxes in one row: Total seats, Free, Occupied, On break */}
       <div className="summary-strip">
         <div className="summary-box">
           <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#000000' }}>{total}</div>
-          <div style={{ fontSize: '12px', color: '#6b7280' }}>Total seats</div>
+          <div style={{ fontSize: '12px', color: '#6b7280' }}>Total on Floor {selectedFloor}</div>
         </div>
         <div className="summary-box">
           <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#16a34a' }}>{free}</div>
@@ -62,47 +65,39 @@ export default function MapPage() {
 
       {/* Floor selector & Legend */}
       <div className="panel">
-        <div className="panel-header">Floor selection and layout</div>
+        <div className="panel-header">Floor selection and layout (100 seats)</div>
         <div className="panel-body">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-            {/* Floor selector: 3 buttons */}
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => setSelectedFloor(1)}
-                className={selectedFloor === 1 ? 'primary' : ''}
-              >
-                Floor 1
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedFloor(2)}
-                className={selectedFloor === 2 ? 'primary' : ''}
-              >
-                Floor 2
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedFloor(3)}
-                className={selectedFloor === 3 ? 'primary' : ''}
-              >
-                Floor 3
-              </button>
+            {/* Floor selector: 5 buttons */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {[1, 2, 3, 4, 5].map((fl) => (
+                <button
+                  key={fl}
+                  type="button"
+                  onClick={() => {
+                    setSelectedFloor(fl);
+                    setSelectedSeat(null);
+                  }}
+                  className={selectedFloor === fl ? 'primary' : ''}
+                >
+                  Floor {fl}
+                </button>
+              ))}
             </div>
 
             {/* Legend: small squares */}
             <div style={{ display: 'flex', gap: '16px', fontSize: '13px', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '14px', height: '14px', background: '#22c55e', border: '1px solid #000000' }}></div>
-                <span>Free</span>
+                <span>Free ({free})</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '14px', height: '14px', background: '#ef4444', border: '1px solid #000000' }}></div>
-                <span>Occupied</span>
+                <span>Occupied ({occupied})</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ width: '14px', height: '14px', background: '#f59e0b', border: '1px solid #000000' }}></div>
-                <span>On break</span>
+                <span>On break ({onBreak})</span>
               </div>
             </div>
           </div>

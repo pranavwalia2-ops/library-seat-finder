@@ -11,6 +11,8 @@ DECLARE
     f1_id UUID;
     f2_id UUID;
     f3_id UUID;
+    f4_id UUID;
+    f5_id UUID;
     admin_id UUID;
     student_ids UUID[] := ARRAY[]::UUID[];
     temp_seat_id UUID;
@@ -23,7 +25,7 @@ DECLARE
     seat_label TEXT;
     seat_code TEXT;
 BEGIN
-    -- 1. Insert Floors
+    -- 1. Insert 5 Floors
     INSERT INTO floors (name, level) VALUES
         ('Ground Floor - Quiet Study Zone', 1)
         RETURNING id INTO f1_id;
@@ -35,6 +37,14 @@ BEGIN
     INSERT INTO floors (name, level) VALUES
         ('Second Floor - Silent Research Wing', 3)
         RETURNING id INTO f3_id;
+
+    INSERT INTO floors (name, level) VALUES
+        ('Third Floor - Periodicals & Journals', 4)
+        RETURNING id INTO f4_id;
+
+    INSERT INTO floors (name, level) VALUES
+        ('Fourth Floor - Digital Lab & Media', 5)
+        RETURNING id INTO f5_id;
 
     -- 2. Insert Admin User
     INSERT INTO users (reg_no, name, role) VALUES
@@ -54,18 +64,22 @@ BEGIN
         student_ids := array_append(student_ids, temp_user_id);
     END LOOP;
 
-    -- 4. Generate 40 Seats per Floor (8 columns x 5 rows grid layout)
+    -- 4. Generate 100 Seats per Floor (10 columns x 10 rows grid layout, 500 total)
     FOR floor_record IN 
         SELECT f1_id as id, 1 as lvl, 'F1' as prefix
         UNION ALL
         SELECT f2_id as id, 2 as lvl, 'F2' as prefix
         UNION ALL
         SELECT f3_id as id, 3 as lvl, 'F3' as prefix
+        UNION ALL
+        SELECT f4_id as id, 4 as lvl, 'F4' as prefix
+        UNION ALL
+        SELECT f5_id as id, 5 as lvl, 'F5' as prefix
     LOOP
-        FOR s_idx IN 1..40 LOOP
-            -- Coordinates: 8 cols (1..8), 5 rows (1..5)
-            col := ((s_idx - 1) % 8) + 1;
-            row := ((s_idx - 1) / 8) + 1;
+        FOR s_idx IN 1..100 LOOP
+            -- Coordinates: 10 cols (1..10), 10 rows (1..10)
+            col := ((s_idx - 1) % 10) + 1;
+            row := ((s_idx - 1) / 10) + 1;
             seat_label := floor_record.prefix || '-S' || LPAD(s_idx::TEXT, 2, '0');
             seat_code := 'LPU-' || floor_record.prefix || '-' || LPAD(s_idx::TEXT, 3, '0');
 
