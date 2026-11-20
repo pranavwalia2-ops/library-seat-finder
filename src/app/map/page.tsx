@@ -7,24 +7,33 @@ export default function MapPage() {
   const [selectedFloor, setSelectedFloor] = useState<number>(1);
   const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
 
-  // Static mock seat generator for 100 seats per floor (labelled F1-001 to F1-100, F2-001, etc.)
+  // TODO: replace static mock data with get_seat_map RPC
+  // Deterministic mock seat generator for 100 seats per floor (labels F1-001 … F5-100)
   const getMockSeats = (floor: number) => {
     const seats = [];
+    // Target percentages per floor (occupied, onBreak)
+    const floorConfig: Record<number, { occupied: number; onBreak: number }> = {
+      1: { occupied: 0.15, onBreak: 0.05 },
+      2: { occupied: 0.40, onBreak: 0.08 },
+      3: { occupied: 0.65, onBreak: 0.10 },
+      4: { occupied: 0.85, onBreak: 0.08 },
+      5: { occupied: 0.30, onBreak: 0.15 },
+    };
+    const { occupied, onBreak } = floorConfig[floor] || { occupied: 0.2, onBreak: 0.05 };
+    const occupiedThresh = occupied;
+    const onBreakThresh = occupied + onBreak;
     for (let i = 1; i <= 100; i++) {
       const pad = String(i).padStart(3, '0');
       const label = `F${floor}-${pad}`;
-      
-      // Deterministic mock statuses for realistic demo distribution
+      // Simple deterministic pseudo‑random based on floor and seat number
+      const hash = (floor * 1000 + i) * 31 % 1000; // 0‑999
+      const rand = hash / 1000; // 0‑0.999
       let status: 'free' | 'occupied' | 'on_break' = 'free';
-      if (
-        i === 3 || i === 7 || i === 12 || i === 18 || i === 25 || i === 31 ||
-        i === 44 || i === 52 || i === 63 || i === 71 || i === 85 || i === 94
-      ) {
+      if (rand < occupiedThresh) {
         status = 'occupied';
-      } else if (i === 5 || i === 15 || i === 22 || i === 48 || i === 67 || i === 82) {
+      } else if (rand < onBreakThresh) {
         status = 'on_break';
       }
-
       seats.push({ id: `s-${floor}-${i}`, label, status });
     }
     return seats;
@@ -38,8 +47,13 @@ export default function MapPage() {
 
   // Library-wide summary totals across all 5 floors (500 seats)
   const totalLibrarySeats = 500;
-  const totalLibraryOccupied = floorOccupied * 5; // scaled mock totals
-  const totalLibraryOnBreak = floorOnBreak * 5;
+  let totalLibraryOccupied = 0;
+  let totalLibraryOnBreak = 0;
+  for (let fl = 1; fl <= 5; fl++) {
+    const seats = getMockSeats(fl);
+    totalLibraryOccupied += seats.filter((s) => s.status === 'occupied').length;
+    totalLibraryOnBreak += seats.filter((s) => s.status === 'on_break').length;
+  }
   const totalLibraryFree = totalLibrarySeats - (totalLibraryOccupied + totalLibraryOnBreak);
 
   return (
