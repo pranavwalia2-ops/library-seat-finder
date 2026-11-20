@@ -3,8 +3,8 @@ import './globals.css';
 import Navigation from '@/components/Navigation';
 
 export const metadata: Metadata = {
-  title: 'SeatSync - Smart Library Seat Booking',
-  description: 'Real-time university library seat booking and anti-hogging engine with concurrency safety.',
+  title: 'SeatSync',
+  description: 'Library seat booking',
 };
 
 export default function RootLayout({
@@ -14,11 +14,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased">
-        <Navigation />
-        <main className="flex-1 pb-20 sm:pb-10 max-w-5xl mx-auto w-full px-4 pt-6">
-          {children}
-        </main>
+      <body style={{ background: '#ffffff', color: '#000000', margin: 0, padding: 0 }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '16px' }}>
+          <Navigation />
+          <main style={{ marginTop: '16px' }}>
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );

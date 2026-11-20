@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { loadStoredState, saveState, AppState } from '@/lib/store';
-import { Seat, ActiveBooking } from '@/lib/types';
-import { QrCode, Coffee, LogOut, CheckCircle2, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Seat } from '@/lib/types';
 
 export default function MySeatPage() {
   const [state, setState] = useState<AppState | null>(null);
@@ -21,7 +20,6 @@ export default function MySeatPage() {
       (s) => s.active_booking && s.active_booking.user_reg_no === current.currentUser.reg_no
     );
 
-    // Auto-release check
     if (active && active.active_booking?.expires_at) {
       const exp = new Date(active.active_booking.expires_at).getTime();
       if (exp < currentTimestamp) {
@@ -30,7 +28,7 @@ export default function MySeatPage() {
         saveState(current);
         setMySeat(null);
         setState(current);
-        setMessage('Your reservation expired and the seat was released for other students.');
+        setMessage('Your reservation has expired and the seat was released.');
         return;
       }
     }
@@ -71,7 +69,7 @@ export default function MySeatPage() {
 
     saveState(current);
     refreshState();
-    setMessage('Break started! You have 20 minutes before your desk is automatically released.');
+    setMessage('Break started. 20-minute timer active.');
   };
 
   const handleReturnFromBreak = () => {
@@ -92,7 +90,7 @@ export default function MySeatPage() {
 
     saveState(current);
     refreshState();
-    setMessage('Welcome back! Your desk status is restored to active study.');
+    setMessage('Returned from break. Status updated to checked in.');
   };
 
   const handleLeaveSeat = () => {
@@ -109,7 +107,7 @@ export default function MySeatPage() {
 
     saveState(current);
     refreshState();
-    setMessage('Seat released successfully. Thank you for making seats available for your peers!');
+    setMessage('Seat released.');
   };
 
   const getRemainingTime = (expiresAtStr?: string | null) => {
@@ -123,113 +121,71 @@ export default function MySeatPage() {
   const remaining = getRemainingTime(mySeat?.active_booking?.expires_at);
 
   return (
-    <div className="max-w-md mx-auto space-y-6 pt-2">
-      <div className="space-y-1 text-center">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Active Desk Session</h2>
-        <p className="text-xs text-slate-500">
-          Student ID: <span className="font-mono text-blue-700 font-bold">{state.currentUser.reg_no}</span> ({state.currentUser.name})
-        </p>
-      </div>
+    <div>
+      <h1>My seat</h1>
+      <p style={{ margin: '4px 0 16px 0' }}>
+        Logged in as: {state.currentUser.reg_no} ({state.currentUser.name})
+      </p>
 
       {message && (
-        <div className="text-xs text-blue-900 bg-blue-50 border border-blue-200 rounded-2xl p-3.5 flex items-start gap-2 shadow-sm font-medium">
-          <Clock className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-          <span>{message}</span>
+        <div style={{ border: '1px solid #000000', padding: '8px', margin: '8px 0', background: '#f3f4f6' }}>
+          {message}
         </div>
       )}
 
       {mySeat ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex items-center justify-between pb-5 border-b border-slate-100">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-400">Reserved Study Desk</div>
-              <div className="text-4xl font-black text-slate-900 font-mono mt-0.5">{mySeat.label}</div>
-              <div className="text-xs text-slate-500 mt-1 font-mono font-medium">Seat Code: {mySeat.code}</div>
-            </div>
-            <div className={`px-3.5 py-1.5 rounded-xl text-xs font-bold uppercase tracking-wider ${
-              mySeat.status === 'checked_in' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-              mySeat.status === 'on_break' ? 'bg-amber-50 text-amber-700 border border-amber-200 animate-pulse' :
-              'bg-purple-50 text-purple-700 border border-purple-200'
-            }`}>
-              {mySeat.status.replace('_', ' ')}
-            </div>
-          </div>
+        <div style={{ border: '1px solid #000000', padding: '16px', maxWidth: '420px' }}>
+          <table>
+            <tbody>
+              <tr>
+                <td><strong>Seat:</strong></td>
+                <td>{mySeat.label} (Code: {mySeat.code})</td>
+              </tr>
+              <tr>
+                <td><strong>Status:</strong></td>
+                <td>{mySeat.status}</td>
+              </tr>
+              {remaining && (
+                <tr>
+                  <td><strong>Time left:</strong></td>
+                  <td><strong>{remaining}</strong></td>
+                </tr>
+              )}
+            </tbody>
+          </table>
 
-          {remaining && (
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-center space-y-1">
-              <div className="text-xs text-slate-500 font-medium flex items-center justify-center gap-1.5">
-                <Clock className="w-4 h-4 text-amber-600" />
-                <span>
-                  {mySeat.status === 'booked' ? 'Check-in Deadline (15m window)' : 'Break Countdown (20m limit)'}
-                </span>
-              </div>
-              <div className="text-4xl font-black font-mono text-amber-600 tracking-wider">
-                {remaining}
-              </div>
-              <div className="text-[11px] text-slate-400">
-                Desk automatically releases when timer reaches 00:00.
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-3 pt-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px' }}>
             {mySeat.status === 'booked' && (
-              <Link
-                href="/scan"
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 text-sm"
-              >
-                <QrCode className="w-4 h-4" />
-                <span>Scan QR at Seat to Check In</span>
+              <Link href="/scan" style={{ textDecoration: 'none' }}>
+                <button className="primary" style={{ width: '100%' }}>
+                  Scan QR to check in
+                </button>
               </Link>
             )}
 
             {mySeat.status === 'checked_in' && (
-              <button
-                onClick={handleStartBreak}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-sm text-sm"
-              >
-                <Coffee className="w-4 h-4" />
-                <span>Take a 20-Minute Break</span>
+              <button onClick={handleStartBreak} style={{ width: '100%' }}>
+                Take a break (20 minutes)
               </button>
             )}
 
             {mySeat.status === 'on_break' && (
-              <button
-                onClick={handleReturnFromBreak}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-sm text-sm"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>I&apos;m Back (Resume Study)</span>
+              <button onClick={handleReturnFromBreak} className="primary" style={{ width: '100%' }}>
+                Return from break
               </button>
             )}
 
-            <button
-              onClick={handleLeaveSeat}
-              className="w-full bg-slate-100 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-700 text-slate-700 font-bold py-3 px-4 rounded-xl border border-slate-200 transition flex items-center justify-center gap-2 text-xs"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Leave Desk & Release Seat</span>
+            <button onClick={handleLeaveSeat} style={{ width: '100%' }}>
+              Leave seat
             </button>
           </div>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-3xl p-8 text-center space-y-4 shadow-sm">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
-            <Clock className="w-7 h-7" />
-          </div>
-          <div>
-            <h3 className="font-extrabold text-slate-900 text-lg">No Active Desk Booking</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
-              You do not have any seat reserved currently. Browse the live floor map to select a free desk.
-            </p>
-          </div>
-          <Link
-            href="/map"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold px-6 py-3 rounded-xl transition text-sm shadow-md shadow-blue-500/20"
-          >
-            <span>Browse Floor Map</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+        <div>
+          <p>You have no active seat booking.</p>
+          <p>
+            <Link href="/map">Go to Map to book a seat &rarr;</Link>
+          </p>
         </div>
       )}
     </div>

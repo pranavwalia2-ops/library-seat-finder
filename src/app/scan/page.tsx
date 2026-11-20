@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { loadStoredState, saveState } from '@/lib/store';
-import { QrCode, CheckCircle2, AlertCircle, ArrowRight, Camera, Keyboard } from 'lucide-react';
 
 export default function ScanPage() {
   const router = useRouter();
@@ -26,14 +25,14 @@ export default function ScanPage() {
     );
 
     if (userSeatIndex === -1) {
-      setError(`No active booking found for student ${userRegNo}. Please reserve a seat from the map first.`);
+      setError(`No active booking found for student ${userRegNo}.`);
       return;
     }
 
     const targetSeat = state.seats[userSeatIndex];
 
     if (targetSeat.code !== cleanCode) {
-      setError(`QR Code mismatch! You booked seat ${targetSeat.label} (${targetSeat.code}), but scanned ${cleanCode}.`);
+      setError(`Code mismatch. Booked ${targetSeat.label} (${targetSeat.code}), entered ${cleanCode}.`);
       return;
     }
 
@@ -49,10 +48,10 @@ export default function ScanPage() {
     };
 
     saveState(state);
-    setSuccess(`Successfully verified! Checked into desk ${targetSeat.label}.`);
+    setSuccess(`Checked in to seat ${targetSeat.label}.`);
     setTimeout(() => {
       router.push('/my-seat');
-    }, 1500);
+    }, 1200);
   };
 
   useEffect(() => {
@@ -91,98 +90,74 @@ export default function ScanPage() {
   );
 
   return (
-    <div className="max-w-md mx-auto space-y-6 pt-2">
-      <div className="text-center space-y-1">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Desk QR Verification</h2>
-        <p className="text-xs text-slate-500">
-          Scan the QR sticker on your library desk or enter the seat code manually
-        </p>
-      </div>
+    <div>
+      <h1>Scan QR</h1>
+      <p style={{ margin: '4px 0 16px 0' }}>Scan the QR sticker at your seat or enter the seat code manually.</p>
 
       {error && (
-        <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl p-3.5 flex items-start gap-2 font-medium">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
-          <span>{error}</span>
+        <div style={{ color: '#dc2626', marginBottom: '12px' }}>
+          {error}
         </div>
       )}
 
       {success && (
-        <div className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-2xl p-3.5 flex items-start gap-2 font-medium">
-          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
-          <span>{success}</span>
+        <div style={{ color: '#16a34a', marginBottom: '12px' }}>
+          {success}
         </div>
       )}
 
-      {/* Camera Scanner View */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-            <Camera className="w-4 h-4 text-blue-600" />
-            <span>Camera Scanner</span>
-          </div>
-          <button
-            onClick={() => setCameraActive(!cameraActive)}
-            className="text-xs px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition shadow-sm"
-          >
-            {cameraActive ? 'Stop Camera' : 'Start Camera'}
+      {/* Camera scanner */}
+      <div style={{ border: '1px solid #000000', padding: '16px', maxWidth: '420px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <strong>Camera scanner</strong>
+          <button onClick={() => setCameraActive(!cameraActive)}>
+            {cameraActive ? 'Stop camera' : 'Start camera'}
           </button>
         </div>
 
         {cameraActive ? (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-black min-h-[260px] flex items-center justify-center">
-            <div id="qr-reader" className="w-full text-white text-xs"></div>
-          </div>
+          <div id="qr-reader" style={{ width: '100%' }}></div>
         ) : (
-          <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center text-xs text-slate-500 bg-slate-50">
-            Click &ldquo;Start Camera&rdquo; to use your phone or laptop camera to scan the desk QR sticker.
+          <div style={{ border: '1px solid #999', padding: '24px', textAlign: 'center', background: '#f9f9f9', fontSize: '14px' }}>
+            Camera is inactive. Click &quot;Start camera&quot; or enter the seat code below.
           </div>
         )}
+      </div>
 
-        {/* Manual Fallback Input */}
-        <div className="pt-3 border-t border-slate-100 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-            <Keyboard className="w-4 h-4 text-purple-600" />
-            <span>Manual Seat Code Fallback</span>
-          </div>
+      {/* Manual input */}
+      <div style={{ border: '1px solid #000000', padding: '16px', maxWidth: '420px' }}>
+        <strong>Manual seat code entry</strong>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleCheckInWithCode(manualCode);
+          }}
+          style={{ display: 'flex', gap: '8px', marginTop: '8px' }}
+        >
+          <input
+            type="text"
+            value={manualCode}
+            onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+            placeholder="e.g. LPU-F1-001"
+            style={{ flex: 1 }}
+          />
+          <button type="submit" className="primary">
+            Verify
+          </button>
+        </form>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleCheckInWithCode(manualCode);
-            }}
-            className="flex gap-2"
-          >
-            <input
-              type="text"
-              value={manualCode}
-              onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-              placeholder="e.g. LPU-F1-002"
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:bg-white"
-            />
+        {currentSeat && (
+          <div style={{ marginTop: '12px', fontSize: '14px', borderTop: '1px solid #ccc', paddingTop: '8px' }}>
+            <span>Your booked seat code is: <strong>{currentSeat.code}</strong>. </span>
             <button
-              type="submit"
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold px-5 py-2.5 rounded-xl text-xs transition shadow-sm shrink-0"
+              type="button"
+              onClick={() => handleCheckInWithCode(currentSeat.code)}
+              style={{ padding: '2px 6px', fontSize: '12px' }}
             >
-              Verify
+              Auto-fill &amp; check in
             </button>
-          </form>
-
-          {currentSeat && (
-            <div className="bg-blue-50/70 rounded-2xl p-3.5 border border-blue-200 text-xs flex items-center justify-between">
-              <div>
-                <span className="text-slate-600">Your Reserved Code:</span>
-                <span className="ml-2 font-mono text-blue-700 font-bold">{currentSeat.code}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleCheckInWithCode(currentSeat.code)}
-                className="text-xs font-bold text-purple-700 hover:text-purple-900 underline"
-              >
-                Auto-Fill & Check In
-              </button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

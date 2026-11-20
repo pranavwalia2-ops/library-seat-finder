@@ -26,3 +26,7 @@ In accordance with hackathon guidelines, this document logs all AI assistance, t
 ## 4. University Theme & Presentation Deck Redesign
 - **Files**: `src/app/*`, `src/components/Navigation.tsx`, `presentation_deck.html`
 - **Contribution**: Redesigned all interfaces from dark mode to an authentic, clean campus portal aesthetic (white surfaces `#ffffff`, slate borders, vibrant university blue `#2563eb`, and purple `#7c3aed` accents). Updated judges pitch slides and viva cheat sheet.
+
+## 5. College Internal Tool Restyling
+- **Files**: `src/app/globals.css`, `src/app/layout.tsx`, `src/components/Navigation.tsx`, `src/app/*`
+- **Contribution**: Restyled all pages to look like an authentic student-built internal tool: plain `#ffffff` background, black text `#000000`, 16px Arial font, 1px solid black borders, max-width 900px, collapsed table borders (`#999999`), and plain square seat grid with colors green, red, amber. Removed all gradients, icons, shadows, animations, rounded cards, and marketing copy.
